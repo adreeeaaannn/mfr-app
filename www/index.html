@@ -1,0 +1,2125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MFR" />
+  <meta name="theme-color" content="#111520" />
+  <title>MFR</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <style>
+    :root {
+      --bg:        #1a1f2e;
+      --surface:   #242938;
+      --card:      #2e3347;
+      --border:    #3a4058;
+      --accent:    #7c9cff;
+      --accent2:   #a78bfa;
+      --good:      #4ade80;
+      --warn:      #fb923c;
+      --bad:       #f87171;
+      --text:      #e8ecf4;
+      --muted:     #8892aa;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      --safe-top:  env(safe-area-inset-top, 0px);
+      --safe-bot:  env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--font-sans);
+      background: #111520;
+      color: var(--text);
+      min-height: 100dvh;
+      max-width: 430px;
+      margin: 0 auto;
+      padding-bottom: calc(80px + var(--safe-bot));
+      overscroll-behavior: none;
+    }
+
+    /* HEADER */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: #111520;
+      padding: calc(var(--safe-top) + 16px) 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; flex-direction: column; }
+    .header h1 {
+      font-size: 22px; font-weight: 700; letter-spacing: 0.08em;
+      background: linear-gradient(120deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .streak-badge {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 12px;
+      font-size: 12px; color: var(--accent); font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* NAV */
+    .nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: var(--safe-bot);
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1; background: none; border: none; color: var(--muted);
+      padding: 12px 0 10px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 10px; font-family: var(--font-sans);
+      transition: color 0.2s;
+    }
+    .nav-btn.active { color: var(--accent); }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* PAGES */
+    .page { display: none; padding: 20px; background: #8892aa; min-height: 100dvh; }
+    .page.active { display: block; }
+
+    /* SECTION LABEL */
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+      color: var(--muted); text-transform: uppercase; margin-bottom: 12px;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px; margin-bottom: 12px;
+    }
+
+    /* SLEEP */
+    .sleep-list { display: flex; flex-direction: column; }
+    .sleep-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .sleep-row-label {
+      font-size: 14px; font-weight: 500; color: var(--text);
+    }
+    .time-input-inline {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 6px 10px; color: var(--text);
+      font-family: var(--font-sans); font-size: 16px; font-weight: 600;
+      outline: none; text-align: center; font-variant-numeric: tabular-nums;
+      -webkit-appearance: none; appearance: none; width: 120px;
+    }
+    .time-input-inline:focus { border-color: var(--accent); }
+    .time-input-inline::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+    .sleep-hours-inline {
+      font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .sleep-quality-select {
+      -webkit-appearance: none; appearance: none;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 6px 28px 6px 12px; color: var(--text);
+      font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+      outline: none; cursor: pointer; width: 130px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .sleep-quality-select:focus { border-color: var(--accent); }
+    .sleep-quality-select.has-value { border-color: var(--accent2); color: var(--accent2); }
+
+    /* range input kept for future use */
+
+    /* ALCOHOL */
+    .drink-row {
+      display: grid;
+      grid-template-columns: 80px 64px 56px 1fr 44px;
+      gap: 6px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .drink-row:last-of-type { border-bottom: none; }
+    .drink-row-header {
+      display: grid;
+      grid-template-columns: 80px 64px 56px 1fr 44px;
+      gap: 6px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+    .drink-col-label {
+      font-size: 9px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      text-align: center;
+    }
+    .drink-col-label:first-child { text-align: left; }
+    .drink-category {
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .drink-select {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 34px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: var(--font-sans); font-size: 12px;
+      text-align: center; outline: none; cursor: pointer;
+      padding: 0 4px;
+      transition: border-color 0.15s;
+    }
+    .drink-select:focus { border-color: var(--accent); }
+    .drink-select.has-value { border-color: var(--accent2); color: var(--accent2); font-weight: 700; }
+    .drink-name-input {
+      width: 100%; height: 34px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: var(--font-sans); font-size: 12px;
+      padding: 0 8px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .drink-name-input:focus { border-color: var(--accent); }
+    .drink-name-input::placeholder { color: var(--muted); }
+    .drink-units-display {
+      height: 34px; border-radius: 8px;
+      background: rgba(124,156,255,0.08); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+      color: var(--accent); text-align: center;
+    }
+    .drink-units-display.has-units {
+      background: rgba(124,156,255,0.15); border-color: var(--accent);
+    }
+    .alcohol-total-row {
+      display: flex; align-items: baseline; justify-content: center;
+      gap: 10px; margin-top: 16px; padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .alcohol-total-num {
+      font-size: 52px; font-weight: 700; line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--warn);
+    }
+    .alcohol-total-num.zero { color: var(--good); }
+    .alcohol-total-label {
+      font-size: 14px; color: var(--muted); padding-bottom: 6px;
+    }
+
+    /* MEDS */
+    .med-list { display: flex; flex-direction: column; gap: 8px; }
+    .med-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .med-yesterday-label {
+      font-size: 10px; font-weight: 700; color: var(--warn);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin: 12px 0 2px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .med-item.med-yesterday { opacity: 0.85; border-style: dashed; }
+    .med-item.med-yesterday.taken { opacity: 1; border-style: solid; }
+    .med-item.taken { border-color: var(--good); background: rgba(74,222,128,0.08); }
+    .med-info { display: flex; flex-direction: column; gap: 2px; }
+    .med-name { font-size: 15px; font-weight: 500; }
+    .med-dose { font-size: 12px; color: var(--muted); }
+    .med-check {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--border); display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .med-item.taken .med-check { background: var(--good); border-color: var(--good); }
+    .add-med-btn {
+      width: 100%; background: none; border: 1.5px dashed var(--border);
+      border-radius: 12px; padding: 12px; color: var(--muted);
+      font-size: 14px; font-family: var(--font-sans); cursor: pointer;
+      margin-top: 8px; transition: all 0.15s;
+    }
+    .add-med-btn:active { background: var(--surface); }
+
+    /* NOTES */
+    .notes-area {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; color: var(--text);
+      font-family: var(--font-sans); font-size: 15px; resize: none;
+      outline: none; min-height: 90px; line-height: 1.5;
+    }
+    .notes-area:focus { border-color: var(--accent2); }
+    .notes-area::placeholder { color: var(--muted); }
+
+    /* ── FEELINGS TRACKER ── */
+    .feeling-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .feeling-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .feeling-row:first-child { padding-top: 0; }
+
+    /* Feelings subtotal row */
+    .feelings-subtotal {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; margin: 6px 0;
+      background: var(--surface); border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .feelings-subtotal-label {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .feelings-subtotal-value {
+      font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;
+      color: var(--accent);
+    }
+
+    .feeling-label {
+      font-size: 14px; font-weight: 500;
+      flex: 1; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .feeling-label.unnamed { color: var(--muted); font-style: italic; }
+
+    /* ── FEELING DROPDOWN ── */
+    .feeling-select {
+      -webkit-appearance: none;
+      appearance: none;
+      flex-shrink: 0;
+      width: 72px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-family: var(--font-sans);
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+      /* custom chevron */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      padding-right: 20px;
+      padding-left: 4px;
+    }
+    .feeling-select:focus {
+      border-color: var(--accent2);
+    }
+    /* Colour tiers applied via JS inline styles on the element;
+       option elements get a neutral dark style for the picker overlay */
+    .feeling-select option {
+      background: var(--card);
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    /* feelings progress counter is now inside accordion subtitle */
+
+    /* SAVE BTN */
+    .save-btn {
+      width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 14px; padding: 16px;
+      color: #fff; font-size: 16px; font-weight: 600;
+      font-family: var(--font-sans); cursor: pointer; margin-top: 8px;
+      letter-spacing: 0.02em; transition: opacity 0.2s;
+    }
+    .save-btn:active { opacity: 0.85; }
+
+    /* HISTORY */
+    .history-empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .history-empty .big { font-size: 48px; margin-bottom: 12px; }
+    .history-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; margin-bottom: 10px;
+    }
+    .history-date {
+      font-size: 11px; font-weight: 600; color: var(--accent);
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .history-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .history-stat {
+      background: var(--surface); border-radius: 10px; padding: 8px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    .history-stat .hval { font-size: 16px; font-weight: 700; }
+    .history-stat .hlbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .history-notes-text { font-size: 13px; color: var(--muted); margin-top: 10px; font-style: italic; }
+    .history-feelings-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 10px;
+    }
+    .history-activities { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+    .history-stat.tappable { cursor: pointer; }
+    .history-detail {
+      display: none; margin-top: 8px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    }
+    .history-detail.open { display: block; }
+    .hd-row {
+      display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center;
+      padding: 4px 0;
+    }
+    .hd-row + .hd-row { border-top: 1px solid var(--border); }
+    .hd-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .hd-meta { font-size: 11px; color: var(--muted); }
+    .hd-val  { font-size: 12px; font-weight: 700; color: var(--accent); }
+    .ha-row {
+      display: grid; grid-template-columns: 76px 1fr auto; gap: 8px; align-items: center;
+      background: var(--surface); border-radius: 6px; padding: 6px 8px;
+    }
+    .ha-label { font-size: 11px; font-weight: 700; color: var(--text); }
+    .ha-desc  { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ha-dur   { font-size: 12px; font-weight: 700; color: var(--accent); }
+    .hf-cell {
+      background: var(--surface); border-radius: 6px; padding: 4px 2px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .hf-name { font-size: 8px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-align: center; }
+    .hf-score { font-size: 13px; font-weight: 700; }
+
+    /* INSIGHTS */
+    .insight-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px; margin-bottom: 12px;
+    }
+    .insight-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bar-label { font-size: 11px; color: var(--muted); width: 28px; text-align: right; }
+    .bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .bar-val { font-size: 11px; color: var(--muted); width: 28px; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7); align-items: flex-end; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: 24px 24px 0 0;
+      padding: 24px 20px calc(24px + var(--safe-bot)); width: 100%; max-width: 430px;
+      border-top: 1px solid var(--border);
+    }
+    .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 18px; }
+    .modal input, .modal select {
+      width: 100%; background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px; color: var(--text);
+      font-family: var(--font-sans); font-size: 15px; outline: none; margin-bottom: 10px;
+    }
+    .modal input:focus { border-color: var(--accent); }
+    .modal-row { display: flex; gap: 10px; }
+    .modal-btn {
+      flex: 1; padding: 14px; border-radius: 12px; border: none;
+      font-size: 15px; font-weight: 600; font-family: var(--font-sans); cursor: pointer;
+    }
+    .modal-btn.primary { background: var(--accent); color: #fff; }
+    .modal-btn.cancel { background: var(--card); color: var(--muted); }
+
+    /* Feelings settings list */
+    .feeling-setting-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 14px; margin-bottom: 6px;
+    }
+    .feeling-setting-num {
+      font-size: 11px; font-weight: 700; color: var(--accent2);
+      width: 24px; flex-shrink: 0; text-align: center;
+    }
+    .feeling-setting-name {
+      flex: 1; font-size: 14px;
+    }
+    .feeling-setting-name.unnamed { color: var(--muted); font-style: italic; }
+    .feeling-edit-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: 16px; cursor: pointer; padding: 4px 6px;
+    }
+
+    /* INSTALL BANNER */
+    .install-banner {
+      background: linear-gradient(135deg, rgba(124,156,255,0.15), rgba(167,139,250,0.15));
+      border: 1px solid var(--accent); border-radius: 14px; padding: 14px 16px;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .install-banner .iicon { font-size: 28px; flex-shrink: 0; }
+    .install-banner-text { flex: 1; }
+    .install-banner-text strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .install-banner-text span { font-size: 12px; color: var(--muted); }
+    .install-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: calc(90px + var(--safe-bot)); left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--good); color: #0a1a0f; padding: 10px 20px; border-radius: 20px;
+      font-size: 14px; font-weight: 600; opacity: 0; transition: all 0.3s; white-space: nowrap;
+      pointer-events: none; z-index: 300;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ACTIVITIES */
+    .activity-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 110px;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .activity-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .activity-row:first-child { padding-top: 0; }
+    .activity-label {
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .activity-desc {
+      width: 100%; height: 34px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: var(--font-sans); font-size: 12px;
+      padding: 0 8px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .activity-desc:focus { border-color: var(--accent); }
+    .activity-desc::placeholder { color: var(--muted); }
+    .activity-duration {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 34px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--muted);
+      font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+      text-align: center; outline: none; cursor: pointer;
+      padding: 0 22px 0 6px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center;
+      transition: border-color 0.15s;
+    }
+    .activity-duration:focus { border-color: var(--accent); }
+    .activity-duration.has-value { border-color: var(--accent2); color: var(--accent2); font-weight: 700; }
+
+
+
+    /* ACCORDION */
+    /* TODAY GRID (2×3 square cards) */
+    .sq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sq-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+      aspect-ratio: 1; padding: 16px; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: space-between;
+      transition: transform 0.1s;
+    }
+    .sq-card:active { transform: scale(0.97); }
+    .sq-icon { font-size: 32px; }
+    .sq-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .sq-sub {
+      font-size: 11px; color: var(--muted); line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* FULL-SCREEN DETAIL SHEETS */
+    .sheet {
+      position: fixed; inset: 0; z-index: 300; background: var(--bg);
+      display: none; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: calc(16px + var(--safe-top)) 16px calc(40px + var(--safe-bot)) 16px;
+    }
+    .sheet.open { display: block; }
+    .sheet-head {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+      position: sticky; top: calc(-16px - var(--safe-top)); background: var(--bg);
+      padding: 10px 0; z-index: 10;
+    }
+    .sheet-back {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 600;
+      font-family: inherit; cursor: pointer; flex: none;
+    }
+    .sheet-icon { font-size: 22px; }
+    .sheet-title { font-size: 20px; font-weight: 700; }
+    .sheet-group {
+      font-size: 11px; font-weight: 700; color: var(--accent2);
+      text-transform: uppercase; letter-spacing: 0.07em; margin: 18px 0 8px;
+    }
+    .sheet-group:first-child { margin-top: 0; }
+
+    .accordion-header {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+      padding: 13px 16px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-top: 10px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .accordion-header:first-child { margin-top: 0; }
+    .accordion-header.open {
+      border-color: var(--accent2);
+      background: var(--surface);
+      border-radius: 14px 14px 0 0;
+      border-bottom: none;
+    }
+    .accordion-header-left {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .accordion-icon { font-size: 18px; }
+    .accordion-title {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text);
+    }
+    .accordion-subtitle {
+      font-size: 11px; color: var(--muted); margin-top: 1px;
+    }
+    .accordion-chevron {
+      font-size: 13px; color: var(--muted);
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+    }
+    .accordion-header.open .accordion-chevron { transform: rotate(180deg); }
+
+    .accordion-body {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--accent2);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      padding: 16px;
+      margin-bottom: 2px;
+      overflow: visible;
+    }
+    .accordion-body.open { display: block; overflow: visible; }
+
+    .mt { margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>MFR</h1>
+    <span class="header-date" id="headerDate"></span>
+  </div>
+  <div class="streak-badge">🔥 <span id="streakCount">0</span> day streak</div>
+</div>
+
+<!-- TODAY PAGE -->
+<div class="page active" id="page-today">
+
+  <div id="installBanner" class="install-banner" style="display:none">
+    <span class="iicon">📲</span>
+    <div class="install-banner-text">
+      <strong>Add to Home Screen</strong>
+      <span>Tap Share → "Add to Home Screen" to install MFR</span>
+    </div>
+    <button class="install-close" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+  </div>
+
+  <!-- MEDICATIONS -->
+  <!-- TODAY GRID -->
+  <div class="sq-grid">
+    <div class="sq-card" onclick="openSheet('sleep')">
+      <span class="sq-icon">🌙</span>
+      <div>
+        <div class="sq-title">Sleep Last Night</div>
+        <div class="sq-sub" id="acc-sleep-sub">Tap to record</div>
+      </div>
+    </div>
+    <div class="sq-card" onclick="openSheet('alcohol')">
+      <span class="sq-icon">🍺</span>
+      <div>
+        <div class="sq-title">Alcohol Yesterday</div>
+        <div class="sq-sub" id="acc-alcohol-sub">Tap to record</div>
+      </div>
+    </div>
+    <div class="sq-card" onclick="openSheet('meds')">
+      <span class="sq-icon">💊</span>
+      <div>
+        <div class="sq-title">Medication Today</div>
+        <div class="sq-sub" id="acc-meds-sub">Tap to record</div>
+      </div>
+    </div>
+    <div class="sq-card" onclick="openSheet('activities')">
+      <span class="sq-icon">🥊</span>
+      <div>
+        <div class="sq-title">Activities Today</div>
+        <div class="sq-sub" id="acc-activities-sub">Tap to record</div>
+      </div>
+    </div>
+    <div class="sq-card" onclick="openSheet('feelings')">
+      <span class="sq-icon">🧠</span>
+      <div>
+        <div class="sq-title">Feelings</div>
+        <div class="sq-sub" id="acc-feelings-sub"><span id="feelingsScored">0</span> / 18 scored</div>
+      </div>
+    </div>
+    <div class="sq-card" onclick="openSheet('notes')">
+      <span class="sq-icon">📝</span>
+      <div>
+        <div class="sq-title">Notes</div>
+        <div class="sq-sub" id="acc-notes-sub">Tap to add a note</div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <div id="autoSaveIndicator" style="text-align:center;font-size:11px;color:var(--muted);padding:8px 0;opacity:0;transition:opacity 0.4s;">✓ Saved</div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div class="section-label">Your log</div>
+  <div id="historyList"></div>
+</div>
+
+<!-- INSIGHTS PAGE -->
+<div class="page" id="page-insights">
+  <div class="section-label">Last 7 days</div>
+  <div id="insightsContent"></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+
+  <div class="section-label">Feelings — rename any feeling</div>
+  <div class="card">
+    <div id="feelingsSettingsList"></div>
+  </div>
+
+  <div class="section-label mt">Medications</div>
+  <div class="card">
+    <div class="med-list" id="settingsMedList"></div>
+    <button class="add-med-btn" onclick="openAddMed()">+ Add medication</button>
+  </div>
+
+  <div class="section-label mt">Data</div>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="add-med-btn" style="border-style:solid;color:var(--text);" onclick="exportData()">📤 Export data as JSON</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:30px;font-size:12px;color:var(--muted)">
+    MFR v2.3 (App Store variant) · Data stored locally on this device
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('today', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    Today
+  </button>
+  <button class="nav-btn" onclick="showPage('history', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    History
+  </button>
+  <button class="nav-btn" onclick="showPage('insights', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Insights
+  </button>
+  <button class="nav-btn" onclick="showPage('settings', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </button>
+</nav>
+
+<!-- ADD MED MODAL -->
+<div class="modal-overlay" id="addMedModal">
+  <div class="modal">
+    <h3>Add Medication</h3>
+    <input type="text" id="medNameInput" placeholder="Medication name" />
+    <input type="text" id="medDoseInput" placeholder="Dose (e.g. 50mg, once daily)" />
+    <div class="modal-row">
+      <button class="modal-btn cancel" onclick="closeAddMed()">Cancel</button>
+      <button class="modal-btn primary" onclick="saveMed()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- RENAME FEELING MODAL -->
+<div class="modal-overlay" id="renameFeelingModal">
+  <div class="modal">
+    <h3>Rename Feeling</h3>
+    <input type="text" id="feelingNameInput" placeholder="e.g. Anxiety, Energy, Focus…" maxlength="30" />
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Leave blank to use the default label (F1–F18)</div>
+    <div class="modal-row">
+      <button class="modal-btn cancel" onclick="closeRenameFeeling()">Cancel</button>
+      <button class="modal-btn primary" onclick="saveFeelngName()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<div class="sheet" id="sheet-meds">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('meds')">‹ Back</button>
+    <span class="sheet-icon">💊</span>
+    <span class="sheet-title">Medication</span>
+  </div>
+  <div class="sheet-body">
+    <div class="med-list" id="medList"></div>
+    <button class="add-med-btn" onclick="openAddMed()">+ Add medication</button>
+  
+  </div>
+</div>
+
+<div class="sheet" id="sheet-sleep">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('sleep')">‹ Back</button>
+    <span class="sheet-icon">🌙</span>
+    <span class="sheet-title">Sleep</span>
+  </div>
+  <div class="sheet-body">
+    <div class="sleep-list">
+
+      <div class="sleep-row">
+        <span class="sleep-row-label">🌙 Went to sleep</span>
+        <input type="time" class="time-input-inline" id="sleepBedtime" value="23:00" oninput="updateSleepTimes()" />
+      </div>
+
+      <div class="sleep-row">
+        <span class="sleep-row-label">☀️ Woke up</span>
+        <input type="time" class="time-input-inline" id="sleepWakeTime" value="07:00" oninput="updateSleepTimes()" />
+      </div>
+
+      <div class="sleep-row">
+        <span class="sleep-row-label">⏱ Total hours</span>
+        <span class="sleep-hours-inline" id="sleepHoursDisplay">8.0 hrs</span>
+      </div>
+
+      <div class="sleep-row" style="border-bottom:none;padding-bottom:0">
+        <span class="sleep-row-label">⭐ Sleep quality</span>
+        <select class="sleep-quality-select" id="sleepQualitySelect" onchange="selectQuality(this.value)">
+          <option value="">— select —</option>
+          <option value="poor">Poor</option>
+          <option value="ok">Ok</option>
+          <option value="good">Good</option>
+          <option value="excellent">Excellent</option>
+        </select>
+      </div>
+
+    </div>
+  
+  </div>
+</div>
+
+<div class="sheet" id="sheet-alcohol">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('alcohol')">‹ Back</button>
+    <span class="sheet-icon">🍺</span>
+    <span class="sheet-title">Alcohol Yesterday</span>
+  </div>
+  <div class="sheet-body">
+
+    <!-- Column headers -->
+    <div class="drink-row-header">
+      <span class="drink-col-label">Drink</span>
+      <span class="drink-col-label">ABV %</span>
+      <span class="drink-col-label">Qty</span>
+      <span class="drink-col-label">Name</span>
+      <span class="drink-col-label">Units</span>
+    </div>
+
+    <!-- 0% Beer -->
+    <div class="drink-row">
+      <span class="drink-category">0% Beer</span>
+      <select class="drink-select" id="abv-0" onchange="calcDrinkUnits(0)">
+        <option value="">ABV</option>
+        <option value="0">0.0%</option>
+        <option value="0.5">0.5%</option>
+      </select>
+      <select class="drink-select" id="qty-0" onchange="calcDrinkUnits(0)">
+        <option value="">Qty</option>
+        <option value="0.33">330ml</option>
+        <option value="0.44">440ml</option>
+        <option value="0.5">500ml</option>
+        <option value="0.568">1 pint</option>
+        <option value="1.136">2 pints</option>
+        <option value="1.704">3 pints</option>
+      </select>
+      <input type="text" class="drink-name-input" id="name-0" placeholder="e.g. Heineken 0.0" />
+      <div class="drink-units-display" id="units-0">—</div>
+    </div>
+
+    <!-- Beer -->
+    <div class="drink-row">
+      <span class="drink-category">Beer</span>
+      <select class="drink-select" id="abv-1" onchange="calcDrinkUnits(1)">
+        <option value="">ABV</option>
+        <option value="3.5">3.5%</option>
+        <option value="4.0">4.0%</option>
+        <option value="4.5">4.5%</option>
+        <option value="5.0">5.0%</option>
+        <option value="5.5">5.5%</option>
+        <option value="6.0">6.0%</option>
+        <option value="6.5">6.5%</option>
+        <option value="7.0">7.0%</option>
+        <option value="8.0">8.0%</option>
+      </select>
+      <select class="drink-select" id="qty-1" onchange="calcDrinkUnits(1)">
+        <option value="">Qty</option>
+        <option value="0.33">330ml</option>
+        <option value="0.44">440ml</option>
+        <option value="0.5">500ml</option>
+        <option value="0.568">1 pint</option>
+        <option value="1.136">2 pints</option>
+        <option value="1.704">3 pints</option>
+        <option value="2.272">4 pints</option>
+      </select>
+      <input type="text" class="drink-name-input" id="name-1" placeholder="e.g. Peroni" />
+      <div class="drink-units-display" id="units-1">—</div>
+    </div>
+
+    <!-- Wine -->
+    <div class="drink-row">
+      <span class="drink-category">Wine</span>
+      <select class="drink-select" id="abv-2" onchange="calcDrinkUnits(2)">
+        <option value="">ABV</option>
+        <option value="9.0">9.0%</option>
+        <option value="11.0">11.0%</option>
+        <option value="12.0">12.0%</option>
+        <option value="12.5">12.5%</option>
+        <option value="13.0">13.0%</option>
+        <option value="13.5">13.5%</option>
+        <option value="14.0">14.0%</option>
+        <option value="14.5">14.5%</option>
+        <option value="15.0">15.0%</option>
+      </select>
+      <select class="drink-select" id="qty-2" onchange="calcDrinkUnits(2)">
+        <option value="">Qty</option>
+        <option value="0.125">125ml</option>
+        <option value="0.175">175ml</option>
+        <option value="0.25">250ml</option>
+        <option value="0.375">½ bottle</option>
+        <option value="0.75">1 bottle</option>
+        <option value="1.5">2 bottles</option>
+      </select>
+      <input type="text" class="drink-name-input" id="name-2" placeholder="e.g. Sauvignon Blanc" />
+      <div class="drink-units-display" id="units-2">—</div>
+    </div>
+
+    <!-- Spirit -->
+    <div class="drink-row">
+      <span class="drink-category">Spirit</span>
+      <select class="drink-select" id="abv-3" onchange="calcDrinkUnits(3)">
+        <option value="">ABV</option>
+        <option value="37.5">37.5%</option>
+        <option value="40.0">40.0%</option>
+        <option value="43.0">43.0%</option>
+        <option value="46.0">46.0%</option>
+        <option value="50.0">50.0%</option>
+        <option value="57.0">57.0%</option>
+      </select>
+      <select class="drink-select" id="qty-3" onchange="calcDrinkUnits(3)">
+        <option value="">Qty</option>
+        <option value="0.025">25ml</option>
+        <option value="0.035">35ml</option>
+        <option value="0.05">50ml</option>
+        <option value="0.07">70ml</option>
+        <option value="0.1">100ml</option>
+      </select>
+      <input type="text" class="drink-name-input" id="name-3" placeholder="e.g. Gin & Tonic" />
+      <div class="drink-units-display" id="units-3">—</div>
+    </div>
+
+    <!-- Aperitif -->
+    <div class="drink-row">
+      <span class="drink-category">Aperitif</span>
+      <select class="drink-select" id="abv-4" onchange="calcDrinkUnits(4)">
+        <option value="">ABV</option>
+        <option value="11.0">11.0%</option>
+        <option value="14.5">14.5%</option>
+        <option value="15.0">15.0%</option>
+        <option value="16.0">16.0%</option>
+        <option value="17.0">17.0%</option>
+        <option value="18.0">18.0%</option>
+        <option value="20.0">20.0%</option>
+      </select>
+      <select class="drink-select" id="qty-4" onchange="calcDrinkUnits(4)">
+        <option value="">Qty</option>
+        <option value="0.05">50ml</option>
+        <option value="0.075">75ml</option>
+        <option value="0.1">100ml</option>
+        <option value="0.15">150ml</option>
+        <option value="0.2">200ml</option>
+      </select>
+      <input type="text" class="drink-name-input" id="name-4" placeholder="e.g. Aperol Spritz" />
+      <div class="drink-units-display" id="units-4">—</div>
+    </div>
+
+    <!-- Cocktail -->
+    <div class="drink-row">
+      <span class="drink-category">Cocktail</span>
+      <select class="drink-select" id="abv-5" onchange="calcDrinkUnits(5)">
+        <option value="">ABV</option>
+        <option value="8.0">8.0%</option>
+        <option value="10.0">10.0%</option>
+        <option value="12.0">12.0%</option>
+        <option value="15.0">15.0%</option>
+        <option value="18.0">18.0%</option>
+        <option value="20.0">20.0%</option>
+        <option value="25.0">25.0%</option>
+        <option value="30.0">30.0%</option>
+      </select>
+      <select class="drink-select" id="qty-5" onchange="calcDrinkUnits(5)">
+        <option value="">Qty</option>
+        <option value="0.1">100ml</option>
+        <option value="0.15">150ml</option>
+        <option value="0.2">200ml</option>
+        <option value="0.25">250ml</option>
+        <option value="0.3">300ml</option>
+      </select>
+      <input type="text" class="drink-name-input" id="name-5" placeholder="e.g. Negroni" />
+      <div class="drink-units-display" id="units-5">—</div>
+    </div>
+
+    <!-- Total -->
+    <div class="alcohol-total-row">
+      <span class="alcohol-total-num zero" id="alcoholTotalDisplay">0.0</span>
+      <span class="alcohol-total-label">units total</span>
+    </div>
+
+  
+  </div>
+</div>
+
+<div class="sheet" id="sheet-activities">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('activities')">‹ Back</button>
+    <span class="sheet-icon">🥊</span>
+    <span class="sheet-title">Activities</span>
+  </div>
+  <div class="sheet-body">
+    <div class="sheet-group">💼 Work</div>
+
+    <div style="display:grid;grid-template-columns:90px 1fr 110px;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:2px;">
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Activity</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Description</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Duration</span>
+    </div>
+
+    <div id="activityRows-work"></div>
+  
+    <div class="sheet-group">📋 Admin</div>
+
+    <div style="display:grid;grid-template-columns:90px 1fr 110px;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:2px;">
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Activity</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Description</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Duration</span>
+    </div>
+
+    <div id="activityRows-admin"></div>
+  
+    <div class="sheet-group">🏠 Home</div>
+
+    <div style="display:grid;grid-template-columns:90px 1fr 110px;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:2px;">
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Activity</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Description</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Duration</span>
+    </div>
+
+    <div id="activityRows-home"></div>
+  
+    <div class="sheet-group">🧘 Mind</div>
+
+    <div style="display:grid;grid-template-columns:90px 1fr 110px;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:2px;">
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Activity</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Description</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:center;">Duration</span>
+    </div>
+
+    <div id="activityRows-mind"></div>
+  
+  </div>
+</div>
+
+<div class="sheet" id="sheet-feelings">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('feelings')">‹ Back</button>
+    <span class="sheet-icon">🧠</span>
+    <span class="sheet-title">Feelings</span>
+  </div>
+  <div class="sheet-body">
+    <div id="feelingsCard"><!-- rendered by JS --></div>
+  
+  </div>
+</div>
+
+<div class="sheet" id="sheet-notes">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('notes')">‹ Back</button>
+    <span class="sheet-icon">📝</span>
+    <span class="sheet-title">Notes</span>
+  </div>
+  <div class="sheet-body">
+    <textarea class="notes-area" id="notesArea" placeholder="Anything worth noting today…" rows="4" oninput="autoSave()"></textarea>
+  
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONSTANTS
+// ─────────────────────────────────────────────
+const FEELING_COUNT = 18;
+
+// Built-in default names — user can override any of these in Settings
+const FEELING_DEFAULTS = [
+  'Fear',
+  'Violence',
+  'Tiredness',
+  'Mental Anxiety',
+  'Physical Anxiety',
+  'Mental Anger',
+  'Physical Anger',
+  'Diet',
+  'Physical Problems',
+  'Paranoia',
+  'Defeat',
+  'Mood',
+  'Humour',
+  'Intelligence',
+  'Stability',
+  'Mental Independence',
+  'Financial Emotion',
+  'Emotional Resilience',
+];
+
+// ─────────────────────────────────────────────
+//  STATE  (today's entry in progress)
+// ─────────────────────────────────────────────
+let state = {
+  sleepBedtime:  '23:00',
+  sleepWakeTime: '07:00',
+  sleepHours:    8.0,
+  sleepQuality:  null,
+  units:         0,
+  drinks:        [],
+  activities:    [],  // array of 5: { desc, duration }
+  meds:          {},
+  feelings:      {},
+  notes:         ''
+};
+
+// ─────────────────────────────────────────────
+//  STORAGE HELPERS
+// ─────────────────────────────────────────────
+function getData()          { return JSON.parse(localStorage.getItem('mfr_entries') || '[]'); }
+function getMeds()          { return JSON.parse(localStorage.getItem('mfr_meds') || '[]'); }
+function saveMeds(m)        { localStorage.setItem('mfr_meds', JSON.stringify(m)); }
+function getFeelingNames()  { return JSON.parse(localStorage.getItem('mfr_feeling_names') || '{}'); }
+function saveFeelingNames(n){ localStorage.setItem('mfr_feeling_names', JSON.stringify(n)); }
+
+function getFeelingLabel(i) {
+  const names = getFeelingNames();
+  return names[i] || FEELING_DEFAULTS[i] || ('Feeling ' + (i + 1));
+}
+
+function toDateStr(d) { return d.toISOString().split('T')[0]; }
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+function init() {
+  const now = new Date();
+  document.getElementById('headerDate').textContent =
+    now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+  updateSleepTimes();
+  renderActivityRows();
+
+  // Load today if already saved
+  const today = toDateStr(now);
+  const existing = getData().find(e => e.date === today);
+  if (existing) loadEntry(existing);
+
+  renderMedList();
+  updateStreak();
+  updateAccordionSubtitles();
+  renderFeelingsCard();
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isIOS && !isStandalone) document.getElementById('installBanner').style.display = 'flex';
+}
+
+// ─────────────────────────────────────────────
+//  ACCORDION
+// ─────────────────────────────────────────────
+function openSheet(id) {
+  const el = document.getElementById('sheet-' + id);
+  if (!el) return;
+  if (id === 'feelings') renderFeelingsCard();
+  if (id === 'meds')     { renderMedList(); updateAccordionSubtitles(); }
+  el.classList.add('open');
+  el.scrollTop = 0;
+}
+function closeSheet(id) {
+  const el = document.getElementById('sheet-' + id);
+  if (el) el.classList.remove('open');
+  updateAccordionSubtitles();
+  updateActivitiesSubtitle();
+}
+
+function toggleAccordion(id) {
+  const header = document.getElementById('acc-' + id);
+  const body   = document.getElementById('body-' + id);
+  const isOpen = header.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+  if (id === 'feelings' && !isOpen) renderFeelingsCard();
+  if (id === 'meds'     && !isOpen) { renderMedList(); updateAccordionSubtitles(); }
+}
+
+function updateAccordionSubtitles() {
+  // Meds
+  const meds = getMeds();
+  const takenCount = meds.filter(m => state.meds[m.id]).length;
+  const subMeds = document.getElementById('acc-meds-sub');
+  if (subMeds) subMeds.textContent = meds.length > 0
+    ? takenCount + ' of ' + meds.length + ' taken'
+    : 'Tap to record';
+
+  // Sleep
+  const subSleep = document.getElementById('acc-sleep-sub');
+  if (subSleep) {
+    const qualityLabel = state.sleepQuality ? ' · ' + state.sleepQuality : '';
+    subSleep.textContent = state.sleepHours
+      ? state.sleepHours.toFixed(1) + 'h · ' + (state.sleepBedtime || '—') + ' → ' + (state.sleepWakeTime || '—') + qualityLabel
+      : 'Tap to record';
+  }
+
+  // Alcohol
+  const subAlc = document.getElementById('acc-alcohol-sub');
+  if (subAlc) subAlc.textContent = state.units > 0
+    ? state.units.toFixed(1) + ' units'
+    : 'Tap to record';
+
+  // Notes
+  const notesVal = document.getElementById('notesArea')?.value?.trim();
+  const subNotes = document.getElementById('acc-notes-sub');
+  if (subNotes) subNotes.textContent = notesVal ? notesVal.substring(0, 40) + (notesVal.length > 40 ? '…' : '') : 'Tap to add a note';
+}
+
+function loadEntry(e) {
+  state.sleepBedtime  = e.sleepBedtime  || '23:00';
+  state.sleepWakeTime = e.sleepWakeTime || '07:00';
+  state.sleepHours    = e.sleepHours    || 8.0;
+  state.sleepQuality  = e.sleepQuality  || null;
+  state.units         = e.units         || 0;
+  state.drinks        = e.drinks        || Array(DRINK_COUNT).fill(null).map(() => ({ abv: '', qty: '', name: '' }));
+  state.activities    = e.activities    || Array(ACTIVITY_COUNT).fill(null).map(() => ({ desc: '', duration: '' }));
+  state.meds          = e.meds          || {};
+  state.feelings      = e.feelings      || {};
+
+  document.getElementById('sleepBedtime').value  = state.sleepBedtime;
+  document.getElementById('sleepWakeTime').value = state.sleepWakeTime;
+  document.getElementById('sleepHoursDisplay').textContent = state.sleepHours.toFixed(1) + ' hrs';
+  if (state.sleepQuality) selectQuality(state.sleepQuality);
+  document.getElementById('notesArea').value = e.notes || '';
+  loadDrinkState();
+  renderActivityRows();
+  loadActivitiesState();
+}
+
+// ─────────────────────────────────────────────
+//  FEELINGS CARD
+// ─────────────────────────────────────────────
+function renderFeelingsCard() {
+  const card = document.getElementById('feelingsCard');
+  card.innerHTML = '';
+
+  for (let i = 0; i < FEELING_COUNT; i++) {
+    const label   = getFeelingLabel(i);
+    const current = (state.feelings[i] !== undefined) ? state.feelings[i] : '';
+
+    const row = document.createElement('div');
+    row.className = 'feeling-row';
+    row.id = 'frow-' + i;
+
+    // Label
+    const lbl = document.createElement('span');
+    lbl.className = 'feeling-label';
+    lbl.textContent = label;
+    row.appendChild(lbl);
+
+    // Dropdown
+    const sel = document.createElement('select');
+    sel.className = 'feeling-select';
+    sel.id = 'fsel-' + i;
+
+    // Blank "not scored" option
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '—';
+    blank.selected = (current === '');
+    sel.appendChild(blank);
+
+    for (let n = 0; n <= 10; n++) {
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      opt.selected = (current !== '' && current === n);
+      sel.appendChild(opt);
+    }
+
+    sel.onchange = () => {
+      const val = sel.value;
+      if (val === '') delete state.feelings[i];
+      else state.feelings[i] = parseInt(val);
+      updateFeelingProgress();
+      updateFeelingsSubtotal();
+      updateFeelingsPositivity();
+      updateFeelingsWellness();
+      updateSelectColor(sel, i);
+      autoSave();
+    };
+
+    updateSelectColor(sel, i);
+    row.appendChild(sel);
+    card.appendChild(row);
+
+    // After the 11th feeling (index 10), insert the distress subtotal row
+    if (i === 10) {
+      const sub = document.createElement('div');
+      sub.className = 'feelings-subtotal';
+      sub.id = 'feelings-subtotal-row';
+      sub.innerHTML = `
+        <span class="feelings-subtotal-label">Distress score (1–11)</span>
+        <span class="feelings-subtotal-value" id="feelingsSubtotal">—</span>`;
+      card.appendChild(sub);
+    }
+
+    // After the 18th feeling (index 17), insert the positivity subtotal row
+    if (i === 17) {
+      const sub2 = document.createElement('div');
+      sub2.className = 'feelings-subtotal';
+      sub2.id = 'feelings-positivity-row';
+      sub2.innerHTML = `
+        <span class="feelings-subtotal-label">Positivity score (12–18)</span>
+        <span class="feelings-subtotal-value" id="feelingsPositivity">—</span>`;
+      card.appendChild(sub2);
+
+      const sub3 = document.createElement('div');
+      sub3.className = 'feelings-subtotal';
+      sub3.id = 'feelings-wellness-row';
+      sub3.style.borderTop = '2px solid var(--accent2)';
+      sub3.style.marginTop = '4px';
+      sub3.innerHTML = `
+        <span class="feelings-subtotal-label" style="color:var(--accent2)">Wellness</span>
+        <span class="feelings-subtotal-value" style="font-size:24px" id="feelingsWellness">—</span>`;
+      card.appendChild(sub3);
+    }
+  }
+
+  updateFeelingProgress();
+  updateFeelingsSubtotal();
+  updateFeelingsPositivity();
+  updateFeelingsWellness();
+}
+
+function updateSelectColor(sel, feelingIndex) {
+  const val = sel.value;
+  if (val === '') {
+    sel.style.background   = 'var(--surface)';
+    sel.style.color        = 'var(--muted)';
+    sel.style.borderColor  = 'var(--border)';
+    sel.style.backgroundImage = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")";
+    sel.style.backgroundRepeat   = 'no-repeat';
+    sel.style.backgroundPosition = 'right 6px center';
+    return;
+  }
+  const n = parseInt(val);
+  const isDistress = (feelingIndex !== undefined && feelingIndex <= 10);
+
+  // Distress (0–10): high score = bad = red, low score = good = green (INVERTED)
+  // Positivity (11–17): high score = good = green, low score = bad = red (NORMAL)
+  const tiers = isDistress ? [
+    { max: 2,  bg: '#0d3328', color: '#6ee7b7', border: '#34d399', chevron: '%2334d399' },
+    { max: 4,  bg: '#1a3320', color: '#86efac', border: '#4ade80', chevron: '%234ade80' },
+    { max: 6,  bg: '#3d3010', color: '#fde68a', border: '#facc15', chevron: '%23facc15' },
+    { max: 8,  bg: '#3d2010', color: '#fdba74', border: '#fb923c', chevron: '%23fb923c' },
+    { max: 10, bg: '#3d1515', color: '#fca5a5', border: '#f87171', chevron: '%23f87171' },
+  ] : [
+    { max: 2,  bg: '#3d1515', color: '#fca5a5', border: '#f87171', chevron: '%23f87171' },
+    { max: 4,  bg: '#3d2010', color: '#fdba74', border: '#fb923c', chevron: '%23fb923c' },
+    { max: 6,  bg: '#3d3010', color: '#fde68a', border: '#facc15', chevron: '%23facc15' },
+    { max: 8,  bg: '#1a3320', color: '#86efac', border: '#4ade80', chevron: '%234ade80' },
+    { max: 10, bg: '#0d3328', color: '#6ee7b7', border: '#34d399', chevron: '%2334d399' },
+  ];
+
+  const tier = tiers.find(t => n <= t.max);
+  sel.style.background   = tier.bg;
+  sel.style.color        = tier.color;
+  sel.style.borderColor  = tier.border;
+  sel.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='${tier.chevron}' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`;
+  sel.style.backgroundRepeat   = 'no-repeat';
+  sel.style.backgroundPosition = 'right 6px center';
+}
+
+function updateFeelingsSubtotal() {
+  const el = document.getElementById('feelingsSubtotal');
+  if (!el) return;
+  let total = 0, scored = 0;
+  for (let i = 0; i <= 10; i++) {
+    if (state.feelings[i] !== undefined) {
+      total += state.feelings[i];
+      scored++;
+    }
+  }
+  if (scored === 0) { el.textContent = '—'; el.style.color = 'var(--accent)'; return; }
+  const pct = Math.round((total / 110) * 100);
+  el.textContent = pct + '%';
+  el.style.color = pct <= 30 ? '#4ade80' : pct <= 60 ? '#facc15' : '#f87171';
+}
+
+function updateFeelingsPositivity() {
+  const el = document.getElementById('feelingsPositivity');
+  if (!el) return;
+  let total = 0, scored = 0;
+  for (let i = 11; i <= 17; i++) {
+    if (state.feelings[i] !== undefined) {
+      total += state.feelings[i];
+      scored++;
+    }
+  }
+  if (scored === 0) { el.textContent = '—'; el.style.color = 'var(--accent)'; return; }
+  const pct = Math.round((total / 70) * 100);
+  el.textContent = pct + '%';
+  el.style.color = pct >= 67 ? '#4ade80' : pct >= 34 ? '#facc15' : '#f87171';
+  updateFeelingsWellness();
+}
+
+function updateFeelingsWellness() {
+  const el = document.getElementById('feelingsWellness');
+  if (!el) return;
+
+  // Distress: sum of feelings 0-10 (out of 110)
+  let distress = 0, dScored = 0;
+  for (let i = 0; i <= 10; i++) {
+    if (state.feelings[i] !== undefined) { distress += state.feelings[i]; dScored++; }
+  }
+  // Positivity: sum of feelings 11-17 (out of 70)
+  let positivity = 0, pScored = 0;
+  for (let i = 11; i <= 17; i++) {
+    if (state.feelings[i] !== undefined) { positivity += state.feelings[i]; pScored++; }
+  }
+
+  if (dScored === 0 && pScored === 0) { el.textContent = '—'; el.style.color = 'var(--accent2)'; return; }
+
+  // Formula: (positivity + 110 - distress) / 180 * 100
+  const raw     = positivity + 110 - distress;
+  const percent = Math.round((raw / 180) * 100);
+  el.textContent = percent + '%';
+  el.style.color = percent >= 67 ? '#4ade80' : percent >= 34 ? '#facc15' : '#f87171';
+}
+
+function updateFeelingProgress() {
+  const scored = Object.keys(state.feelings).length;
+  document.getElementById('feelingsScored').textContent = scored;
+}
+
+// ─────────────────────────────────────────────
+//  SLEEP
+// ─────────────────────────────────────────────
+function updateSleepTimes() {
+  const bed  = document.getElementById('sleepBedtime').value;
+  const wake = document.getElementById('sleepWakeTime').value;
+  state.sleepBedtime  = bed;
+  state.sleepWakeTime = wake;
+  if (!bed || !wake) return;
+
+  const [bh, bm] = bed.split(':').map(Number);
+  const [wh, wm] = wake.split(':').map(Number);
+  let bedMins  = bh * 60 + bm;
+  let wakeMins = wh * 60 + wm;
+  // If wake is earlier than bed (crossed midnight), add 24h to wake
+  if (wakeMins <= bedMins) wakeMins += 24 * 60;
+  const totalMins = wakeMins - bedMins;
+  state.sleepHours = Math.round(totalMins / 6) / 10;
+  document.getElementById('sleepHoursDisplay').textContent = state.sleepHours.toFixed(1) + ' hrs';
+  updateAccordionSubtitles();
+  autoSave();
+}
+
+function selectQuality(q) {
+  state.sleepQuality = q || null;
+  const sel = document.getElementById('sleepQualitySelect');
+  if (sel) {
+    sel.value = q || '';
+    sel.classList.toggle('has-value', !!q);
+  }
+  updateAccordionSubtitles();
+  autoSave();
+}
+
+// ─────────────────────────────────────────────
+//  ALCOHOL
+// ─────────────────────────────────────────────
+// state.drinks = array of 6 objects: { abv, qty, name }
+// Units formula: abv(%) * qty(litres) = units
+
+const DRINK_COUNT = 6;
+
+function calcDrinkUnits(idx) {
+  const abv  = parseFloat(document.getElementById('abv-' + idx).value) || 0;
+  const qty  = parseFloat(document.getElementById('qty-' + idx).value) || 0;
+  const name = document.getElementById('name-' + idx).value;
+
+  // Store in state
+  if (!state.drinks) state.drinks = Array(DRINK_COUNT).fill(null).map(() => ({ abv: '', qty: '', name: '' }));
+  state.drinks[idx] = { abv: document.getElementById('abv-' + idx).value, qty: document.getElementById('qty-' + idx).value, name };
+
+  // UK units formula: ABV(%) × volume(litres) = units
+  // e.g. 5% × 2.272L (4 pints) = 11.36 units ✓
+  const units = abv * qty;
+  const el    = document.getElementById('units-' + idx);
+
+  // Style the ABV and qty selects
+  const abvSel = document.getElementById('abv-' + idx);
+  const qtySel = document.getElementById('qty-' + idx);
+  abvSel.classList.toggle('has-value', !!abvSel.value);
+  qtySel.classList.toggle('has-value', !!qtySel.value);
+
+  const abvSelected = document.getElementById('abv-' + idx).value !== '';
+  const qtySelected = document.getElementById('qty-' + idx).value !== '';
+
+  if (abvSelected && qtySelected) {
+    el.textContent = units.toFixed(1);
+    el.classList.add('has-units');
+  } else {
+    el.textContent = '—';
+    el.classList.remove('has-units');
+  }
+
+  recalcTotalUnits();
+}
+
+function recalcTotalUnits() {
+  let total = 0;
+  for (let i = 0; i < DRINK_COUNT; i++) {
+    const abv = parseFloat(document.getElementById('abv-' + i)?.value) || 0;
+    const qty = parseFloat(document.getElementById('qty-' + i)?.value) || 0;
+    total += abv * qty;
+  }
+  state.units = parseFloat(total.toFixed(1));
+  const el = document.getElementById('alcoholTotalDisplay');
+  el.textContent = state.units.toFixed(1);
+  el.classList.toggle('zero', state.units === 0);
+  updateAccordionSubtitles();
+  autoSave();
+}
+
+function loadDrinkState() {
+  if (!state.drinks) return;
+  state.drinks.forEach((d, i) => {
+    if (!d) return;
+    const abvEl  = document.getElementById('abv-' + i);
+    const qtyEl  = document.getElementById('qty-' + i);
+    const nameEl = document.getElementById('name-' + i);
+    if (abvEl && d.abv)   { abvEl.value  = d.abv;  abvEl.classList.add('has-value'); }
+    if (qtyEl && d.qty)   { qtyEl.value  = d.qty;  qtyEl.classList.add('has-value'); }
+    if (nameEl && d.name) { nameEl.value = d.name; }
+    calcDrinkUnits(i);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  ACTIVITIES
+// ─────────────────────────────────────────────
+// Storage indices are permanent — never reorder these. Indices 0–5 are the
+// original six (incl. retired 'Other'); 6–10 were added later. Existing
+// history keeps its meaning because entries store activities by index.
+const ACTIVITY_COUNT  = 11;
+const ACTIVITY_LABELS = ['Work', 'Exercise', 'Reading', 'Housework', 'DIY', 'Other',
+                         'Budgeting', 'Strategy', 'Cooking', 'Shopping', 'Meditation'];
+// The four Today-page cards and which activity indices belong to each:
+const ACTIVITY_GROUPS = [
+  { key: 'work',  idx: [0] },              // Work
+  { key: 'admin', idx: [7, 6] },           // Strategy, Budgeting
+  { key: 'home',  idx: [3, 9, 4, 8] },     // Housework, Shopping, DIY, Cooking
+  { key: 'mind',  idx: [1, 2, 10, 5] },    // Exercise, Reading, Meditation, Other
+];
+
+const ACTIVITY_PLACEHOLDERS = {
+  0: 'What did you do?', 1: 'e.g. Run, gym, swim', 2: 'What did you read?',
+  3: 'e.g. Cleaning, laundry', 4: 'What did you work on?', 6: 'e.g. Bills, accounts',
+  7: 'e.g. Plans, goals', 8: 'What did you cook?', 9: 'e.g. Groceries, errands',
+  10: 'e.g. Breathing, mindfulness', 5: 'Describe activity'
+};
+
+const DURATION_OPTS = [
+  ['10','10 min'],['20','20 min'],['30','30 min'],['45','45 min'],['60','1 hr'],
+  ['90','1.5 hrs'],['120','2 hrs'],['180','3 hrs'],['240','4 hrs'],['300','5 hrs'],
+  ['360','6 hrs'],['420','7 hrs'],['480','8 hrs'],['540','9 hrs'],['600','10 hrs'],
+  ['660','11 hrs'],['720','12 hrs']
+];
+
+function renderActivityRows() {
+  const opts = '<option value="">Duration</option>' +
+    DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  ACTIVITY_GROUPS.forEach(g => {
+    const wrap = document.getElementById('activityRows-' + g.key);
+    if (!wrap) return;
+    wrap.innerHTML = g.idx.map(i => `
+    <div class="activity-row">
+      <span class="activity-label">${ACTIVITY_LABELS[i]}</span>
+      <input type="text" class="activity-desc" id="act-desc-${i}" placeholder="${ACTIVITY_PLACEHOLDERS[i] || 'What did you do?'}" oninput="updateActivitiesSubtitle()" />
+      <select class="activity-duration" id="act-dur-${i}" onchange="updateActivitiesSubtitle(); this.classList.toggle('has-value', !!this.value)">${opts}</select>
+    </div>`).join('');
+  });
+}
+
+// format minutes as "45m" / "1.5h" / "8h"
+function fmtDur(mins) {
+  const m = parseInt(mins) || 0;
+  if (!m) return '';
+  if (m < 60) return m + 'm';
+  const h = m / 60;
+  return (h % 1 === 0 ? h : h.toFixed(1)) + 'h';
+}
+
+function updateActivitiesSubtitle() {
+  if (!state.activities) state.activities = [];
+  for (let i = 0; i < ACTIVITY_COUNT; i++) {
+    const descEl = document.getElementById('act-desc-' + i);
+    const durEl  = document.getElementById('act-dur-' + i);
+    if (descEl || durEl) {
+      state.activities[i] = { desc: descEl?.value || '', duration: durEl?.value || '' };
+    } else {
+      // no row on screen for this index (e.g. retired 'Other') — keep stored value
+      state.activities[i] = state.activities[i] || { desc: '', duration: '' };
+    }
+  }
+  ACTIVITY_GROUPS.forEach(g => {
+    const active = g.idx
+      .filter(i => state.activities[i] && state.activities[i].duration)
+      .map(i => ACTIVITY_LABELS[i]);
+    const sub = document.getElementById('acc-activities-' + g.key + '-sub');
+    if (sub) sub.textContent = active.length > 0 ? active.join(' · ') : 'Tap to record';
+  });
+  // Combined subtitle for the Activities square card
+  const allActive = [];
+  let totalMins = 0;
+  ACTIVITY_GROUPS.forEach(g => g.idx.forEach(i => {
+    const a = state.activities[i];
+    if (a && (a.duration || (a.desc && a.desc.trim()))) {
+      allActive.push(ACTIVITY_LABELS[i]);
+      totalMins += parseInt(a.duration) || 0;
+    }
+  }));
+  const cardSub = document.getElementById('acc-activities-sub');
+  if (cardSub) cardSub.textContent = allActive.length > 0
+    ? allActive.length + ' logged' + (totalMins ? ' · ' + fmtDur(totalMins) : '')
+    : 'Tap to record';
+  autoSave();
+}
+
+function loadActivitiesState() {
+  if (!state.activities) return;
+  state.activities.forEach((a, i) => {
+    const descEl = document.getElementById('act-desc-' + i);
+    const durEl  = document.getElementById('act-dur-' + i);
+    if (descEl && a.desc)     descEl.value = a.desc;
+    if (durEl  && a.duration) { durEl.value = a.duration; durEl.classList.add('has-value'); }
+  });
+  updateActivitiesSubtitle();
+}
+// ─────────────────────────────────────────────
+function renderMedList() {
+  const meds = getMeds();
+  const list = document.getElementById('medList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (meds.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0">No medications added yet</p>';
+    return;
+  }
+  meds.forEach(med => {
+    const taken = state.meds[med.id] || false;
+    const item  = document.createElement('div');
+    item.className = 'med-item' + (taken ? ' taken' : '');
+    item.onclick = () => toggleMed(med.id);
+    item.innerHTML = `
+      <div class="med-info">
+        <span class="med-name">${med.name}</span>
+        <span class="med-dose">${med.dose}</span>
+      </div>
+      <div class="med-check">${taken ? '✓' : ''}</div>`;
+    list.appendChild(item);
+  });
+
+  // Morning catch-up: until 12 noon, yesterday's untaken meds can still be ticked off
+  if (new Date().getHours() < 12) {
+    const yKey    = toDateStr(new Date(Date.now() - 86400000));
+    const yEntry  = getData().find(e => e.date === yKey);
+    if (yEntry) {
+      const yMeds    = yEntry.meds || {};
+      const untaken  = meds.some(m => !yMeds[m.id]);
+      if (untaken) {
+        const divider = document.createElement('div');
+        divider.className = 'med-yesterday-label';
+        divider.textContent = 'Yesterday · catch-up until 12pm';
+        list.appendChild(divider);
+        meds.forEach(med => {
+          const taken = yMeds[med.id] || false;
+          const item  = document.createElement('div');
+          item.className = 'med-item med-yesterday' + (taken ? ' taken' : '');
+          item.onclick = () => toggleMedYesterday(med.id);
+          item.innerHTML = `
+            <div class="med-info">
+              <span class="med-name">${med.name}</span>
+              <span class="med-dose">${med.dose}</span>
+            </div>
+            <div class="med-check">${taken ? '✓' : ''}</div>`;
+          list.appendChild(item);
+        });
+      }
+    }
+  }
+}
+
+function toggleMedYesterday(id) {
+  const yKey    = toDateStr(new Date(Date.now() - 86400000));
+  const entries = getData();
+  const idx     = entries.findIndex(e => e.date === yKey);
+  if (idx < 0) return;
+  entries[idx].meds = entries[idx].meds || {};
+  entries[idx].meds[id] = !entries[idx].meds[id];
+  localStorage.setItem('mfr_entries', JSON.stringify(entries));
+  renderMedList();
+  renderHistory();
+}
+
+function toggleMed(id) {
+  state.meds[id] = !state.meds[id];
+  renderMedList();
+  updateAccordionSubtitles();
+  autoSave();
+}
+
+function openAddMed() {
+  document.getElementById('medNameInput').value = '';
+  document.getElementById('medDoseInput').value = '';
+  document.getElementById('addMedModal').classList.add('open');
+  setTimeout(() => document.getElementById('medNameInput').focus(), 100);
+}
+function closeAddMed() { document.getElementById('addMedModal').classList.remove('open'); }
+function saveMed() {
+  const name = document.getElementById('medNameInput').value.trim();
+  const dose = document.getElementById('medDoseInput').value.trim();
+  if (!name) return;
+  const meds = getMeds();
+  meds.push({ id: Date.now().toString(), name, dose: dose || '' });
+  saveMeds(meds);
+  closeAddMed();
+  renderMedList();
+  renderSettingsMeds();
+  showToast('Medication added');
+}
+
+function renderSettingsMeds() {
+  const meds = getMeds();
+  const list = document.getElementById('settingsMedList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (meds.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0">No medications added yet</p>';
+    return;
+  }
+  meds.forEach(med => {
+    const item = document.createElement('div');
+    item.className = 'med-item';
+    item.style.cursor = 'default';
+    item.innerHTML = `
+      <div class="med-info">
+        <span class="med-name">${med.name}</span>
+        <span class="med-dose">${med.dose}</span>
+      </div>
+      <button onclick="deleteMed('${med.id}')" style="background:none;border:none;color:var(--bad);font-size:18px;cursor:pointer;padding:4px">🗑</button>`;
+    list.appendChild(item);
+  });
+}
+
+function deleteMed(id) {
+  saveMeds(getMeds().filter(m => m.id !== id));
+  delete state.meds[id];
+  renderMedList();
+  renderSettingsMeds();
+}
+
+// ─────────────────────────────────────────────
+//  FEELINGS SETTINGS (rename)
+// ─────────────────────────────────────────────
+let renamingIndex = null;
+
+function renderFeelingsSettings() {
+  const list = document.getElementById('feelingsSettingsList');
+  list.innerHTML = '';
+  const names = getFeelingNames();
+  for (let i = 0; i < FEELING_COUNT; i++) {
+    const custom  = names[i];
+    const display = custom || ('F' + (i + 1));
+    const item = document.createElement('div');
+    item.className = 'feeling-setting-item';
+    item.innerHTML = `
+      <span class="feeling-setting-num">F${i+1}</span>
+      <span class="feeling-setting-name${custom ? '' : ' unnamed'}">${display}</span>
+      <button class="feeling-edit-btn" onclick="openRenameFeeling(${i})">✏️</button>`;
+    list.appendChild(item);
+  }
+}
+
+function openRenameFeeling(i) {
+  renamingIndex = i;
+  const names = getFeelingNames();
+  document.getElementById('feelingNameInput').value = names[i] || '';
+  document.getElementById('renameFeelingModal').classList.add('open');
+  setTimeout(() => document.getElementById('feelingNameInput').focus(), 100);
+}
+function closeRenameFeeling() {
+  document.getElementById('renameFeelingModal').classList.remove('open');
+  renamingIndex = null;
+}
+function saveFeelngName() {
+  if (renamingIndex === null) return;
+  const val   = document.getElementById('feelingNameInput').value.trim();
+  const names = getFeelingNames();
+  if (val) names[renamingIndex] = val;
+  else delete names[renamingIndex];
+  saveFeelingNames(names);
+  closeRenameFeeling();
+  renderFeelingsSettings();
+  renderFeelingsCard();   // update today's card too
+  showToast('Feeling updated');
+}
+
+// ─────────────────────────────────────────────
+//  SAVE
+// ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
+let autoSaveTimer = null;
+function autoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveEntry, 800);
+}
+
+function saveEntry() {
+  const today   = toDateStr(new Date());
+  const entries = getData();
+  const idx     = entries.findIndex(e => e.date === today);
+  const entry   = {
+    date:         today,
+    feelings:     { ...state.feelings },
+    sleepBedtime: state.sleepBedtime,
+    sleepWakeTime:state.sleepWakeTime,
+    sleepHours:   state.sleepHours,
+    sleep:        state.sleepHours,
+    sleepQuality: state.sleepQuality,
+    units:        state.units,
+    drinks:       state.drinks || [],
+    activities:   state.activities || [],
+    meds:         { ...state.meds },
+    notes:        document.getElementById('notesArea').value.trim()
+  };
+  if (idx >= 0) entries[idx] = entry;
+  else entries.unshift(entry);
+  localStorage.setItem('mfr_entries', JSON.stringify(entries));
+  updateStreak();
+  renderHistory();
+  renderInsights();
+  // Show subtle indicator
+  const ind = document.getElementById('autoSaveIndicator');
+  if (ind) { ind.style.opacity = '1'; setTimeout(() => ind.style.opacity = '0', 1500); }
+}
+
+// ─────────────────────────────────────────────
+//  STREAK
+// ─────────────────────────────────────────────
+function updateStreak() {
+  const entries = getData();
+  if (!entries.length) { document.getElementById('streakCount').textContent = '0'; return; }
+  const dates = entries.map(e => e.date).sort().reverse();
+  let streak = 0, d = new Date();
+  for (let i = 0; i < 365; i++) {
+    const s = toDateStr(d);
+    if (dates.includes(s)) { streak++; d.setDate(d.getDate() - 1); }
+    else if (i === 0) d.setDate(d.getDate() - 1);
+    else break;
+  }
+  document.getElementById('streakCount').textContent = streak;
+}
+
+// ─────────────────────────────────────────────
+//  HISTORY
+// ─────────────────────────────────────────────
+function toggleHistDetail(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+
+function renderHistory() {
+  const entries = getData();
+  const el      = document.getElementById('historyList');
+  if (!entries.length) {
+    el.innerHTML = `<div class="history-empty"><div class="big">📖</div><div>No entries yet.<br>Save your first entry today.</div></div>`;
+    return;
+  }
+  const names = getFeelingNames();
+  el.innerHTML = entries.map((e, idx) => {
+    const d       = new Date(e.date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    const takenCount = Object.values(e.meds || {}).filter(Boolean).length;
+    const totalMeds  = getMeds().length;
+    // Positivity feelings (indices 11+): high is good
+    const scoreColor = s => s <= 3 ? '#f87171' : s <= 5 ? '#fb923c' : s <= 7 ? '#facc15' : '#4ade80';
+    // Distress feelings (indices 0–10): low is good — 1–4 green, 5–6 amber, 7–10 red
+    const distressColor = s => s <= 4 ? '#4ade80' : s <= 6 ? '#fb923c' : '#f87171';
+    const feelingColor = (i, s) => (+i <= 10 ? distressColor(s) : scoreColor(s));
+
+    // Alcohol detail — the drinks recorded that day
+    const drinks = (e.drinks || []).filter(dr => dr && (dr.name || (parseFloat(dr.abv) && parseFloat(dr.qty))));
+    const alcoholDetail = drinks.length ? drinks.map((dr, i) => {
+      const units = ((parseFloat(dr.abv) || 0) * (parseFloat(dr.qty) || 0)).toFixed(1);
+      return `<div class="hd-row">
+        <span class="hd-name">${dr.name ? dr.name : 'Drink ' + (i + 1)}</span>
+        <span class="hd-meta">${dr.abv ? dr.abv + '%' : ''}${dr.abv && dr.qty ? ' × ' : ''}${dr.qty ? dr.qty + 'L' : ''}</span>
+        <span class="hd-val">${units > 0 ? units + 'u' : ''}</span>
+      </div>`;
+    }).join('') : `<div class="hd-row"><span class="hd-name" style="color:var(--muted)">No drinks recorded</span></div>`;
+
+    // Sleep detail — the quality note recorded that day
+    const QUALITY_LABELS = { poor: ['Poor', 'var(--bad)'], ok: ['Ok', 'var(--warn)'], good: ['Good', 'var(--good)'], excellent: ['Excellent', 'var(--good)'] };
+    const q = QUALITY_LABELS[e.sleepQuality];
+    const sleepDetail = `<div class="hd-row">
+      <span class="hd-name">⭐ Sleep quality</span>
+      <span class="hd-val" style="color:${q ? q[1] : 'var(--muted)'}">${q ? q[0] : 'Not recorded'}</span>
+    </div>`;
+
+    // Feelings mini grid — only show scored ones
+    const scored = Object.entries(e.feelings || {});
+    const feelingsHTML = scored.length ? `
+      <div class="history-feelings-grid">
+        ${scored.map(([i, s]) => `
+          <div class="hf-cell">
+            <span class="hf-name">${names[i] || 'F'+(+i+1)}</span>
+            <span class="hf-score" style="color:${feelingColor(i, s)}">${s}</span>
+          </div>`).join('')}
+      </div>` : '';
+
+    // Activities — show any with a duration or description
+    const acts = (e.activities || [])
+      .map((a, i) => ({ ...a, label: ACTIVITY_LABELS[i] }))
+      .filter(a => a && (a.duration || (a.desc && a.desc.trim())));
+    const activitiesHTML = acts.length ? `
+      <div class="history-activities">
+        ${acts.map(a => `
+          <div class="ha-row">
+            <span class="ha-label">${a.label}</span>
+            <span class="ha-desc">${a.desc ? a.desc : ''}</span>
+            <span class="ha-dur">${a.duration ? fmtDur(a.duration) : '✓'}</span>
+          </div>`).join('')}
+      </div>` : '';
+
+    const sleepHrs = e.sleepHours || e.sleep || 0;
+    const sleepColor = sleepHrs >= 7 ? 'var(--good)' : sleepHrs >= 5 ? 'var(--warn)' : 'var(--bad)';
+    const bedLabel  = e.sleepBedtime  ? e.sleepBedtime  : '—';
+    const wakeLabel = e.sleepWakeTime ? e.sleepWakeTime : '—';
+    return `
+      <div class="history-item">
+        <div class="history-date">${dateStr}</div>
+        <div class="history-stats">
+          <div class="history-stat tappable" onclick="toggleHistDetail('hd-sleep-${idx}')">
+            <span class="hval" style="color:${sleepColor}">${sleepHrs}h</span>
+            <span class="hlbl">Sleep ▾</span>
+            <span style="font-size:9px;color:var(--muted)">${bedLabel} → ${wakeLabel}</span>
+          </div>
+          <div class="history-stat tappable" onclick="toggleHistDetail('hd-alc-${idx}')">
+            <span class="hval" style="color:${e.units > 2 ? 'var(--warn)' : 'var(--good)'}">${e.units}u</span>
+            <span class="hlbl">Alcohol ▾</span>
+          </div>
+          <div class="history-stat">
+            <span class="hval" style="color:var(--good)">${totalMeds > 0 ? takenCount+'/'+totalMeds : '—'}</span>
+            <span class="hlbl">Meds</span>
+          </div>
+        </div>
+        <div class="history-detail" id="hd-sleep-${idx}">${sleepDetail}</div>
+        <div class="history-detail" id="hd-alc-${idx}">${alcoholDetail}</div>
+        ${activitiesHTML}
+        ${feelingsHTML}
+        ${e.notes ? `<div class="history-notes-text">"${e.notes.substring(0,100)}${e.notes.length > 100 ? '…' : ''}"</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+//  INSIGHTS
+// ─────────────────────────────────────────────
+function renderInsights() {
+  const entries = getData().slice(0, 7);
+  const el      = document.getElementById('insightsContent');
+  if (entries.length < 2) {
+    el.innerHTML = `<div class="history-empty"><div class="big">📊</div><div>Log a few days to see your trends here.</div></div>`;
+    return;
+  }
+
+  const avgSleep = (entries.reduce((s, e) => s + (e.sleepHours || e.sleep || 0), 0) / entries.length).toFixed(1);
+  const avgUnits = (entries.reduce((s, e) => s + (e.units || 0), 0) / entries.length).toFixed(1);
+
+  // Sleep bars
+  const sleepBars = entries.slice().reverse().map(e => {
+    const hrs   = e.sleepHours || e.sleep || 0;
+    const pct   = Math.min(100, (hrs / 10) * 100);
+    const color = hrs >= 7 ? 'var(--good)' : hrs >= 5 ? 'var(--warn)' : 'var(--bad)';
+    const day   = new Date(e.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'short' });
+    return `<div class="bar-row">
+      <span class="bar-label">${day}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="bar-val">${hrs}h</span>
+    </div>`;
+  }).join('');
+
+  // Feelings averages across last 7 days — only show feelings with at least 2 data points
+  const names   = getFeelingNames();
+  const totals  = {};
+  const counts  = {};
+  entries.forEach(e => {
+    Object.entries(e.feelings || {}).forEach(([i, s]) => {
+      totals[i] = (totals[i] || 0) + s;
+      counts[i] = (counts[i] || 0) + 1;
+    });
+  });
+  const feelingAvgs = Object.keys(totals)
+    .filter(i => counts[i] >= 2)
+    .map(i => ({ i, avg: (totals[i] / counts[i]).toFixed(1), label: names[i] || 'F'+(+i+1) }))
+    .sort((a, b) => b.avg - a.avg);
+
+  const feelingBars = feelingAvgs.map(f => {
+    const pct   = (f.avg / 10) * 100;
+    const color = f.avg >= 7 ? '#4ade80' : f.avg >= 5 ? '#facc15' : '#fb923c';
+    return `<div class="bar-row">
+      <span class="bar-label" style="width:36px;font-size:10px">${f.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="bar-val">${f.avg}</span>
+    </div>`;
+  }).join('');
+
+  // Activities — total time per activity across the last 7 days
+  const actTotals = ACTIVITY_LABELS.map((label, i) => {
+    let mins = 0, days = 0;
+    entries.forEach(e => {
+      const a = (e.activities || [])[i];
+      if (a && (a.duration || (a.desc && a.desc.trim()))) {
+        days++;
+        mins += parseInt(a.duration) || 0;
+      }
+    });
+    return { label, mins, days };
+  }).filter(a => a.days > 0);
+  const maxActMins = Math.max(...actTotals.map(a => a.mins), 1);
+  const activityBars = actTotals
+    .sort((a, b) => b.mins - a.mins)
+    .map(a => {
+      const pct = Math.max(3, Math.round((a.mins / maxActMins) * 100));
+      return `<div class="bar-row">
+        <span class="bar-label" style="width:56px;font-size:10px">${a.label}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--accent)"></div></div>
+        <span class="bar-val">${a.mins ? fmtDur(a.mins) : a.days + 'd'}</span>
+      </div>`;
+    }).join('');
+
+  el.innerHTML = `
+    <div class="insight-card">
+      <div class="insight-title">🌙 Sleep · avg ${avgSleep}h</div>
+      ${sleepBars}
+    </div>
+    ${activityBars ? `
+    <div class="insight-card">
+      <div class="insight-title">🥊 Activities · 7-day total</div>
+      ${activityBars}
+    </div>` : ''}
+    ${feelingBars ? `
+    <div class="insight-card">
+      <div class="insight-title">🧠 Feelings · 7-day avg</div>
+      ${feelingBars}
+    </div>` : ''}
+    <div class="insight-card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="text-align:center">
+          <div style="font-size:36px;font-weight:700;color:var(--warn)">${avgUnits}</div>
+          <div style="font-size:12px;color:var(--muted)">avg units/day</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:36px;font-weight:700;color:var(--accent)">${entries.length}</div>
+          <div style="font-size:12px;color:var(--muted)">days logged</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+//  NAVIGATION
+// ─────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'history')  renderHistory();
+  if (name === 'insights') renderInsights();
+  if (name === 'settings') { renderSettingsMeds(); renderFeelingsSettings(); }
+  if (name === 'today')    { renderMedList(); updateAccordionSubtitles(); }
+}
+
+// ─────────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─────────────────────────────────────────────
+//  EXPORT / CLEAR
+// ─────────────────────────────────────────────
+function exportData() {
+  const data = { entries: getData(), meds: getMeds(), feelingNames: getFeelingNames() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'mfr-export-' + toDateStr(new Date()) + '.json';
+  a.click();
+}
+
+
+// Prevent pinch-zoom and double-tap zoom (iOS ignores user-scalable in some contexts)
+document.addEventListener('gesturestart', e => e.preventDefault());
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300 && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
+    e.preventDefault();
+  }
+  lastTouchEnd = now;
+}, { passive: false });
+
+init();
+</script>
+</body>
+</html>
