@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#111520" />
   <title>MFR</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
   <style>
     :root {
       --bg:        #1a1f2e;
@@ -706,11 +706,13 @@
   <div class="card">
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button class="add-med-btn" style="border-style:solid;color:var(--text);" onclick="exportData()">📤 Export data as JSON</button>
+      <button class="add-med-btn" style="border-style:solid;color:var(--text);" onclick="document.getElementById('importFile').click()">📥 Import data from JSON</button>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(this)">
     </div>
   </div>
 
   <div style="text-align:center;margin-top:30px;font-size:12px;color:var(--muted)">
-    MFR v2.3 (App Store variant) · Data stored locally on this device
+    MFR v2.4 (App Store variant) · Data stored locally on this device
   </div>
 </div>
 
@@ -2098,6 +2100,32 @@ function showToast(msg) {
 // ─────────────────────────────────────────────
 //  EXPORT / CLEAR
 // ─────────────────────────────────────────────
+function importData(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || !Array.isArray(data.entries)) {
+        alert('That file does not look like an MFR export.');
+        return;
+      }
+      const n = data.entries.length;
+      if (!confirm('Import ' + n + ' day' + (n === 1 ? '' : 's') + ' of MFR data? Any data already in this app will be replaced.')) return;
+      localStorage.setItem('mfr_entries', JSON.stringify(data.entries));
+      if (data.meds)         localStorage.setItem('mfr_meds', JSON.stringify(data.meds));
+      if (data.feelingNames) localStorage.setItem('mfr_feeling_names', JSON.stringify(data.feelingNames));
+      alert('Imported ' + n + ' days. The app will now reload.');
+      location.reload();
+    } catch (err) {
+      alert('Could not read that file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
 function exportData() {
   const data = { entries: getData(), meds: getMeds(), feelingNames: getFeelingNames() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
