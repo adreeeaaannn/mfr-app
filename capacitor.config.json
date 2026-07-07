@@ -1,0 +1,9 @@
+{
+  "appId": "com.adrian.mfr",
+  "appName": "MFR",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#111520"
+  }
+}

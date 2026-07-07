@@ -1,0 +1,40 @@
+# Codemagic build recipe for MFR (Capacitor iOS)
+# ------------------------------------------------
+# NOTE: This pipeline uses the "generate iOS project fresh each build"
+# approach so no local Mac is ever needed.
+#
+# Before the App Store publishing steps will work you need:
+#   1. An Apple Developer account (£79/yr)
+#   2. App Store Connect integration set up in Codemagic
+#      (Codemagic docs: "iOS code signing" - it automates certificates)
+# Until then, this file is ready but the workflow will stop at signing.
+
+workflows:
+  ios-build:
+    name: MFR iOS build
+    max_build_duration: 45
+    environment:
+      node: 20
+      xcode: latest
+      # Uncomment and fill these in once Apple account exists:
+      # ios_signing:
+      #   distribution_type: app_store
+      #   bundle_identifier: com.adrian.mfr
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Add iOS platform (generated fresh each build)
+        script: npx cap add ios
+      - name: Copy web app into iOS project
+        script: npx cap sync ios
+      - name: Build iOS app
+        script: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO build
+    artifacts:
+      - ios/App/build/**/*.app
+    # Publishing section to add later, once signing is configured:
+    # publishing:
+    #   app_store_connect:
+    #     auth: integration
+    #     submit_to_testflight: true
