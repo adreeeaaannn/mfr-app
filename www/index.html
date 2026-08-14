@@ -524,7 +524,7 @@
     }
     .sq-grid {
       display: grid; grid-template-columns: 1fr 1fr;
-      grid-template-rows: repeat(4, 1fr);
+      grid-template-rows: repeat(4, minmax(0, 1fr));
       gap: 10px; flex-shrink: 0;
     }
     .sq-card {
