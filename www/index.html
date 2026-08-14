@@ -361,7 +361,46 @@
       font-size: 9px; color: var(--muted); max-width: 100%;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .history-notes-text { font-size: 13px; color: var(--muted); margin-top: 10px; font-style: italic; }
+    .history-notes-text {
+      font-size: 13px; color: var(--muted); margin-top: 10px; font-style: italic;
+      cursor: pointer;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .history-notes-text.expanded {
+      -webkit-line-clamp: unset; display: block; overflow: visible;
+    }
+    .history-notes-more {
+      font-size: 10px; font-weight: 700; color: var(--accent2);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-top: 3px; cursor: pointer; font-style: normal;
+    }
+    /* DIET in history */
+    .history-diet {
+      margin-top: 10px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 10px; cursor: pointer;
+    }
+    .history-diet-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .history-diet-title {
+      font-size: 11px; font-weight: 700; color: var(--text);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .history-diet-hint {
+      font-size: 12px; color: var(--accent2); font-weight: 700;
+      transition: transform 0.15s; display: inline-block;
+    }
+    .history-diet.open .history-diet-hint { transform: rotate(180deg); }
+    .hdt-row {
+      display: grid; grid-template-columns: 68px 1fr; gap: 8px;
+      align-items: start; padding: 5px 0;
+    }
+    .hdt-row + .hdt-row { border-top: 1px solid var(--border); }
+    .hdt-label { font-size: 11px; font-weight: 700; color: var(--text); }
+    .hdt-val   { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .history-diet .hdt-rows { display: none; }
+    .history-diet.open .hdt-rows { display: block; margin-top: 8px; }
     .history-feelings-grid {
       display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 10px;
     }
@@ -2295,6 +2334,8 @@ function saveEntry() {
     drinks:       state.drinks || [],
     activities:   state.activities || [],
     meds:         { ...state.meds },
+    // Snapshot the regimen so history stays accurate if meds change later
+    medRegimen:   getMeds().map(m => ({ id: m.id, name: m.name, dose: m.dose })),
     notes:        document.getElementById('notesArea').value.trim(),
     work:         { ...(state.work || {}) },
     diet:         { ...(state.diet || {}) }
@@ -2346,8 +2387,19 @@ function renderHistory() {
   el.innerHTML = entries.map((e, idx) => {
     const d       = new Date(e.date + 'T12:00:00');
     const dateStr = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
-    const takenCount = Object.values(e.meds || {}).filter(Boolean).length;
-    const totalMeds  = getMeds().length;
+    // Meds — use the regimen snapshot saved with the entry where available,
+    // so historic days reflect the meds you were actually on at the time.
+    const medList    = (e.medRegimen && e.medRegimen.length) ? e.medRegimen : getMeds();
+    const takenCount = medList.filter(m => (e.meds || {})[m.id]).length;
+    const totalMeds  = medList.length;
+    const medsDetail = totalMeds ? medList.map(m => {
+      const taken = !!(e.meds || {})[m.id];
+      return `<div class="hd-row">
+        <span class="hd-name">${taken ? '✅' : '⬜️'} ${m.name}</span>
+        <span class="hd-meta">${m.dose || ''}</span>
+        <span class="hd-val" style="color:${taken ? 'var(--good)' : 'var(--muted)'}">${taken ? 'Taken' : 'Not taken'}</span>
+      </div>`;
+    }).join('') : `<div class="hd-row"><span class="hd-name" style="color:var(--muted)">No medication set up</span></div>`;
     // Positivity feelings (indices 11+): high is good
     const scoreColor = s => s <= 3 ? '#f87171' : s <= 5 ? '#fb923c' : s <= 7 ? '#facc15' : '#4ade80';
     // Distress feelings (indices 0–10): low is good — 1–4 green, 5–6 amber, 7–10 red
@@ -2399,8 +2451,52 @@ function renderHistory() {
       </div>` : '';
 
     // Work duration — from the Work card
-    const workMins     = parseInt(e.work?.hours) || 0;
-    const workEmployer = (e.work?.employer || '').trim();
+    const w           = e.work || {};
+    const workMins     = parseInt(w.hours) || 0;
+    const workEmployer = (w.employer || '').trim();
+    const workHasData  = !!(workMins || workEmployer || w.colleagues || w.amStart || w.amEnd || w.pmStart || w.pmEnd || w.problems || w.notes);
+
+    const workAmMiles = milesBetween(w.amStart, w.amEnd);
+    const workPmMiles = milesBetween(w.pmStart, w.pmEnd);
+    const workRow = (label, val) => val ? `<div class="hd-row">
+        <span class="hd-name">${label}</span>
+        <span class="hd-meta"></span>
+        <span class="hd-val">${val}</span>
+      </div>` : '';
+    const workDetail = workHasData ? [
+      workRow('👔 Employer', workEmployer),
+      workRow('🗣️ Colleagues contacted', w.colleagues),
+      workRow('⏱️ Hours', workMins ? fmtDur(workMins) : ''),
+      workRow('🌅 Morning mileage', workAmMiles !== null ? workAmMiles.toFixed(1) + ' mi' : ''),
+      workRow('🌇 Evening mileage', workPmMiles !== null ? workPmMiles.toFixed(1) + ' mi' : ''),
+      workRow('⚠️ Problems arisen', w.problems),
+      workRow('📝 Notes', w.notes)
+    ].filter(Boolean).join('') : `<div class="hd-row"><span class="hd-name" style="color:var(--muted)">No work recorded</span></div>`;
+
+    // Diet — tap to expand full meal notes
+    const dt = e.diet || {};
+    const dietMeals = [
+      ['Breakfast', dt.breakfast], ['Lunch', dt.lunch],
+      ['Dinner', dt.dinner], ['Snacks', dt.snacks]
+    ].filter(([, v]) => v && v.trim());
+    const dietHTML = dietMeals.length ? `
+      <div class="history-diet" onclick="this.classList.toggle('open')">
+        <div class="history-diet-head">
+          <span class="history-diet-title">🍽️ Diet · ${dietMeals.length} logged</span>
+          <span class="history-diet-hint">▾</span>
+        </div>
+        <div class="hdt-rows">
+          ${dietMeals.map(([label, val]) => `
+            <div class="hdt-row">
+              <span class="hdt-label">${label}</span>
+              <span class="hdt-val">${val}</span>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    // Notes — tap to expand to the full note
+    const notesHTML = e.notes ? `
+      <div class="history-notes-text" onclick="this.classList.toggle('expanded')">"${e.notes}"</div>` : '';
 
     const sleepHrs = e.sleepHours || e.sleep || 0;    const sleepColor = sleepHrs >= 7 ? 'var(--good)' : sleepHrs >= 5 ? 'var(--warn)' : 'var(--bad)';
     const bedLabel  = e.sleepBedtime  ? e.sleepBedtime  : '—';
@@ -2418,21 +2514,24 @@ function renderHistory() {
             <span class="hval" style="color:${e.units > 2 ? 'var(--warn)' : 'var(--good)'}">${e.units}u</span>
             <span class="hlbl">Alcohol ▾</span>
           </div>
-          <div class="history-stat">
+          <div class="history-stat${totalMeds ? ' tappable' : ''}" ${totalMeds ? `onclick="toggleHistDetail('hd-meds-${idx}')"` : ''}>
             <span class="hval" style="color:var(--good)">${totalMeds > 0 ? takenCount+'/'+totalMeds : '—'}</span>
-            <span class="hlbl">Meds</span>
+            <span class="hlbl">Meds${totalMeds ? ' ▾' : ''}</span>
           </div>
-          <div class="history-stat">
+          <div class="history-stat${workHasData ? ' tappable' : ''}" ${workHasData ? `onclick="toggleHistDetail('hd-work-${idx}')"` : ''}>
             <span class="hval" style="color:${workMins ? 'var(--accent2)' : 'var(--muted)'}">${workMins ? fmtDur(workMins) : '—'}</span>
-            <span class="hlbl">Work</span>
+            <span class="hlbl">Work${workHasData ? ' ▾' : ''}</span>
             ${workEmployer ? `<span class="hsub">${workEmployer}</span>` : ''}
           </div>
         </div>
         <div class="history-detail" id="hd-sleep-${idx}">${sleepDetail}</div>
         <div class="history-detail" id="hd-alc-${idx}">${alcoholDetail}</div>
+        <div class="history-detail" id="hd-meds-${idx}">${medsDetail}</div>
+        <div class="history-detail" id="hd-work-${idx}">${workDetail}</div>
         ${activitiesHTML}
+        ${dietHTML}
         ${feelingsHTML}
-        ${e.notes ? `<div class="history-notes-text">"${e.notes.substring(0,100)}${e.notes.length > 100 ? '…' : ''}"</div>` : ''}
+        ${notesHTML}
       </div>`;
   }).join('');
 }
