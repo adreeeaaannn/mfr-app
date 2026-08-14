@@ -515,17 +515,17 @@
 
 
     /* ACCORDION */
-    /* TODAY GRID (2×4 cards — fills exactly one screen, no scroll) */
+    /* TODAY GRID (2×4 cards — sized precisely by JS to fill exactly one screen) */
+    body.page-today-active { padding-bottom: 0; }
     #page-today.active {
       display: flex; flex-direction: column;
-      height: calc(100dvh - var(--hdr-h, 84px) - 80px - var(--safe-bot));
-      overflow: hidden;
       padding: 14px 16px 6px;
+      overflow: hidden;
     }
     .sq-grid {
       display: grid; grid-template-columns: 1fr 1fr;
       grid-template-rows: repeat(4, 1fr);
-      gap: 10px; flex: 1; min-height: 0;
+      gap: 10px; flex-shrink: 0;
     }
     .sq-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 18px;
@@ -689,7 +689,7 @@
       <strong>Add to Home Screen</strong>
       <span>Tap Share → "Add to Home Screen" to install MFR</span>
     </div>
-    <button class="install-close" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+    <button class="install-close" onclick="document.getElementById('installBanner').style.display='none'; sizeTodayGrid();">✕</button>
   </div>
 
   <!-- MEDICATIONS -->
@@ -1324,7 +1324,7 @@ function init() {
   document.getElementById('headerDate').textContent =
     now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
 
-  measureHeader();
+  document.body.classList.add('page-today-active');
   updateSleepTimes();
   renderActivityRows();
   renderWorkHoursDial();
@@ -1345,6 +1345,10 @@ function init() {
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   if (isIOS && !isStandalone) document.getElementById('installBanner').style.display = 'flex';
+
+  // Size the grid after layout has settled (fonts, safe-area insets, banner)
+  requestAnimationFrame(sizeTodayGrid);
+  setTimeout(sizeTodayGrid, 300);
 }
 
 // ─────────────────────────────────────────────
@@ -1421,6 +1425,8 @@ function resetForNewDay() {
   // updateSleepTimes/updateActivitiesSubtitle queue an autosave — cancel it so
   // a blank entry isn't created for the new day before you've logged anything.
   clearTimeout(autoSaveTimer);
+
+  requestAnimationFrame(sizeTodayGrid);
 }
 
 function checkDayRollover() {
@@ -1500,13 +1506,36 @@ function updateAccordionSubtitles() {
 
 // ─────────────────────────────────────────────
 //  ONE-SCREEN GRID SIZING
+//  Measures exactly what's on screen (header, nav, banner, indicator) and
+//  sets the grid's height in JS rather than guessing with CSS calc — this
+//  is what actually guarantees no scroll regardless of device or banner state.
 // ─────────────────────────────────────────────
-function measureHeader() {
-  const h = document.querySelector('.header');
-  if (h) document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px');
+function sizeTodayGrid() {
+  const header = document.querySelector('.header');
+  const nav    = document.querySelector('.nav');
+  const page   = document.getElementById('page-today');
+  const grid   = document.querySelector('.sq-grid');
+  if (!header || !nav || !page || !grid) return;
+
+  const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const headerH   = header.offsetHeight;
+  const navH      = nav.offsetHeight;
+
+  const pageStyle    = getComputedStyle(page);
+  const pagePadTop   = parseFloat(pageStyle.paddingTop)    || 0;
+  const pagePadBottom= parseFloat(pageStyle.paddingBottom) || 0;
+
+  let siblingsH = 0;
+  Array.from(page.children).forEach(child => {
+    if (child !== grid) siblingsH += child.offsetHeight;
+  });
+
+  const available = viewportH - headerH - navH - pagePadTop - pagePadBottom - siblingsH;
+  grid.style.height = Math.max(240, available) + 'px';
 }
-window.addEventListener('resize', measureHeader);
-window.addEventListener('orientationchange', () => setTimeout(measureHeader, 250));
+window.addEventListener('resize', sizeTodayGrid);
+window.addEventListener('orientationchange', () => setTimeout(sizeTodayGrid, 250));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', sizeTodayGrid);
 
 // ─────────────────────────────────────────────
 //  WORK
@@ -2608,10 +2637,11 @@ function showPage(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  document.body.classList.toggle('page-today-active', name === 'today');
   if (name === 'history')  renderHistory();
   if (name === 'insights') renderInsights();
   if (name === 'settings') { renderSettingsMeds(); renderFeelingsSettings(); }
-  if (name === 'today')    { renderMedList(); updateAccordionSubtitles(); }
+  if (name === 'today')    { renderMedList(); updateAccordionSubtitles(); requestAnimationFrame(sizeTodayGrid); }
 }
 
 // ─────────────────────────────────────────────
