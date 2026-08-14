@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#111520" />
   <title>MFR</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
   <style>
     :root {
       --bg:        #1a1f2e;
@@ -712,7 +712,7 @@
   </div>
 
   <div style="text-align:center;margin-top:30px;font-size:12px;color:var(--muted)">
-    MFR v2.4 (App Store variant) · Data stored locally on this device
+    MFR v2.5 (App Store variant) · Data stored locally on this device
   </div>
 </div>
 
@@ -1372,18 +1372,44 @@ function updateSelectColor(sel, feelingIndex) {
   sel.style.backgroundPosition = 'right 6px center';
 }
 
+// ── Score model ──────────────────────────────
+// Distress %  = mean of scored distress feelings (0–10)   × 10
+// Positivity% = mean of scored positivity feelings (11–17) × 10
+// Wellness %  = ((100 − distress%) + positivity%) / 2
+// Averaging (rather than dividing by a fixed max) means partial scoring
+// isn't penalised — 3 feelings scored reads the same scale as 11.
+
+function calcDistressPercent(feelings) {
+  if (!feelings) return null;
+  let total = 0, scored = 0;
+  for (let i = 0; i <= 10; i++) { if (feelings[i] !== undefined) { total += feelings[i]; scored++; } }
+  if (scored === 0) return null;
+  return Math.round((total / scored) * 10);
+}
+
+function calcPositivityPercent(feelings) {
+  if (!feelings) return null;
+  let total = 0, scored = 0;
+  for (let i = 11; i <= 17; i++) { if (feelings[i] !== undefined) { total += feelings[i]; scored++; } }
+  if (scored === 0) return null;
+  return Math.round((total / scored) * 10);
+}
+
+function calcWellnessPercent(feelings) {
+  const d = calcDistressPercent(feelings);
+  const p = calcPositivityPercent(feelings);
+  if (d === null && p === null) return null;
+  // If only one side is scored, use it alone rather than assuming the other
+  if (d === null) return p;
+  if (p === null) return 100 - d;
+  return Math.round(((100 - d) + p) / 2);
+}
+
 function updateFeelingsSubtotal() {
   const el = document.getElementById('feelingsSubtotal');
   if (!el) return;
-  let total = 0, scored = 0;
-  for (let i = 0; i <= 10; i++) {
-    if (state.feelings[i] !== undefined) {
-      total += state.feelings[i];
-      scored++;
-    }
-  }
-  if (scored === 0) { el.textContent = '—'; el.style.color = 'var(--accent)'; return; }
-  const pct = Math.round((total / 110) * 100);
+  const pct = calcDistressPercent(state.feelings);
+  if (pct === null) { el.textContent = '—'; el.style.color = 'var(--accent)'; return; }
   el.textContent = pct + '%';
   el.style.color = pct <= 30 ? '#4ade80' : pct <= 60 ? '#facc15' : '#f87171';
 }
@@ -1391,15 +1417,8 @@ function updateFeelingsSubtotal() {
 function updateFeelingsPositivity() {
   const el = document.getElementById('feelingsPositivity');
   if (!el) return;
-  let total = 0, scored = 0;
-  for (let i = 11; i <= 17; i++) {
-    if (state.feelings[i] !== undefined) {
-      total += state.feelings[i];
-      scored++;
-    }
-  }
-  if (scored === 0) { el.textContent = '—'; el.style.color = 'var(--accent)'; return; }
-  const pct = Math.round((total / 70) * 100);
+  const pct = calcPositivityPercent(state.feelings);
+  if (pct === null) { el.textContent = '—'; el.style.color = 'var(--accent)'; return; }
   el.textContent = pct + '%';
   el.style.color = pct >= 67 ? '#4ade80' : pct >= 34 ? '#facc15' : '#f87171';
   updateFeelingsWellness();
@@ -1408,23 +1427,8 @@ function updateFeelingsPositivity() {
 function updateFeelingsWellness() {
   const el = document.getElementById('feelingsWellness');
   if (!el) return;
-
-  // Distress: sum of feelings 0-10 (out of 110)
-  let distress = 0, dScored = 0;
-  for (let i = 0; i <= 10; i++) {
-    if (state.feelings[i] !== undefined) { distress += state.feelings[i]; dScored++; }
-  }
-  // Positivity: sum of feelings 11-17 (out of 70)
-  let positivity = 0, pScored = 0;
-  for (let i = 11; i <= 17; i++) {
-    if (state.feelings[i] !== undefined) { positivity += state.feelings[i]; pScored++; }
-  }
-
-  if (dScored === 0 && pScored === 0) { el.textContent = '—'; el.style.color = 'var(--accent2)'; return; }
-
-  // Formula: (positivity + 110 - distress) / 180 * 100
-  const raw     = positivity + 110 - distress;
-  const percent = Math.round((raw / 180) * 100);
+  const percent = calcWellnessPercent(state.feelings);
+  if (percent === null) { el.textContent = '—'; el.style.color = 'var(--accent2)'; return; }
   el.textContent = percent + '%';
   el.style.color = percent >= 67 ? '#4ade80' : percent >= 34 ? '#facc15' : '#f87171';
 }
@@ -1475,6 +1479,7 @@ function selectQuality(q) {
 // Units formula: abv(%) * qty(litres) = units
 
 const DRINK_COUNT = 6;
+const DRINK_LABELS = ['0% Beer', 'Beer', 'Wine', 'Spirit', 'Aperitif', 'Cocktail'];
 
 function calcDrinkUnits(idx) {
   const abv  = parseFloat(document.getElementById('abv-' + idx).value) || 0;
@@ -1545,22 +1550,22 @@ function loadDrinkState() {
 // Storage indices are permanent — never reorder these. Indices 0–5 are the
 // original six (incl. retired 'Other'); 6–10 were added later. Existing
 // history keeps its meaning because entries store activities by index.
-const ACTIVITY_COUNT  = 11;
+const ACTIVITY_COUNT  = 12;
 const ACTIVITY_LABELS = ['Work', 'Exercise', 'Reading', 'Housework', 'DIY', 'Other',
-                         'Budgeting', 'Strategy', 'Cooking', 'Shopping', 'Meditation'];
+                         'Budgeting', 'Strategy', 'Cooking', 'Shopping', 'Meditation', 'Sexual'];
 // The four Today-page cards and which activity indices belong to each:
 const ACTIVITY_GROUPS = [
   { key: 'work',  idx: [0] },              // Work
   { key: 'admin', idx: [7, 6] },           // Strategy, Budgeting
   { key: 'home',  idx: [3, 9, 4, 8] },     // Housework, Shopping, DIY, Cooking
-  { key: 'mind',  idx: [1, 2, 10, 5] },    // Exercise, Reading, Meditation, Other
+  { key: 'mind',  idx: [1, 2, 10, 11, 5] },    // Exercise, Reading, Meditation, Sexual, Other
 ];
 
 const ACTIVITY_PLACEHOLDERS = {
   0: 'What did you do?', 1: 'e.g. Run, gym, swim', 2: 'What did you read?',
   3: 'e.g. Cleaning, laundry', 4: 'What did you work on?', 6: 'e.g. Bills, accounts',
   7: 'e.g. Plans, goals', 8: 'What did you cook?', 9: 'e.g. Groceries, errands',
-  10: 'e.g. Breathing, mindfulness', 5: 'Describe activity'
+  10: 'e.g. Breathing, mindfulness', 5: 'Describe activity', 11: 'Describe'
 };
 
 const DURATION_OPTS = [
@@ -1894,13 +1899,13 @@ function renderHistory() {
     const feelingColor = (i, s) => (+i <= 10 ? distressColor(s) : scoreColor(s));
 
     // Alcohol detail — the drinks recorded that day
-    const drinks = (e.drinks || []).filter(dr => dr && (dr.name || (parseFloat(dr.abv) && parseFloat(dr.qty))));
-    const alcoholDetail = drinks.length ? drinks.map((dr, i) => {
+    const drinks = (e.drinks || []).map((dr, i) => ({ ...dr, i })).filter(dr => dr && (dr.name || (dr.abv !== '' && dr.abv != null && dr.qty)));
+    const alcoholDetail = drinks.length ? drinks.map(dr => {
       const units = ((parseFloat(dr.abv) || 0) * (parseFloat(dr.qty) || 0)).toFixed(1);
       return `<div class="hd-row">
-        <span class="hd-name">${dr.name ? dr.name : 'Drink ' + (i + 1)}</span>
-        <span class="hd-meta">${dr.abv ? dr.abv + '%' : ''}${dr.abv && dr.qty ? ' × ' : ''}${dr.qty ? dr.qty + 'L' : ''}</span>
-        <span class="hd-val">${units > 0 ? units + 'u' : ''}</span>
+        <span class="hd-name">${dr.name ? dr.name : (DRINK_LABELS[dr.i] || 'Drink ' + (dr.i + 1))}</span>
+        <span class="hd-meta">${dr.abv !== '' && dr.abv != null ? dr.abv + '%' : ''}${dr.abv !== '' && dr.abv != null && dr.qty ? ' × ' : ''}${dr.qty ? dr.qty + 'L' : ''}</span>
+        <span class="hd-val">${units > 0 ? units + 'u' : '0.0u'}</span>
       </div>`;
     }).join('') : `<div class="hd-row"><span class="hd-name" style="color:var(--muted)">No drinks recorded</span></div>`;
 
@@ -1969,6 +1974,58 @@ function renderHistory() {
 }
 
 // ─────────────────────────────────────────────
+//  WELLNESS CHART
+// ─────────────────────────────────────────────
+function renderWellnessChart(entriesChrono) {
+  const pts = entriesChrono
+    .map(e => ({ date: e.date, val: calcWellnessPercent(e.feelings) }))
+    .filter(p => p.val !== null);
+  if (pts.length < 2) return '';
+
+  const W = 320, H = 150, padL = 30, padR = 12, padT = 14, padB = 24;
+  const yMin = 30, yMax = 80;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  const xPos = i => padL + (pts.length === 1 ? innerW / 2 : (i / (pts.length - 1)) * innerW);
+  const yPos = v => {
+    const clamped = Math.max(yMin, Math.min(yMax, v));
+    return padT + innerH - ((clamped - yMin) / (yMax - yMin)) * innerH;
+  };
+
+  const linePoints = pts.map((p, i) => `${xPos(i)},${yPos(p.val)}`).join(' ');
+
+  const gridLines = [30, 40, 50, 60, 70, 80].map(v => `
+    <line x1="${padL}" y1="${yPos(v)}" x2="${W - padR}" y2="${yPos(v)}" stroke="var(--border)" stroke-width="1" />
+    <text x="${padL - 6}" y="${yPos(v) + 3}" font-size="8" fill="var(--muted)" text-anchor="end">${v}</text>
+  `).join('');
+
+  const dots = pts.map((p, i) => {
+    const dLabel = new Date(p.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    return `
+      <circle cx="${xPos(i)}" cy="${yPos(p.val)}" r="3" fill="var(--accent2)" stroke="#111520" stroke-width="1.5" />
+      <circle cx="${xPos(i)}" cy="${yPos(p.val)}" r="13" fill="transparent" style="cursor:pointer" onclick="showWellnessPoint('${dLabel}', ${p.val})" ontouchstart="showWellnessPoint('${dLabel}', ${p.val})" />
+    `;
+  }).join('');
+
+  return `
+    <div class="insight-card">
+      <div class="insight-title">💚 Wellness trend</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;touch-action:manipulation;">
+        ${gridLines}
+        <polyline points="${linePoints}" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linejoin="miter" stroke-linecap="round" />
+        ${dots}
+      </svg>
+      <div id="wellnessTooltip" style="min-height:16px;text-align:center;font-size:12px;color:var(--muted);margin-top:6px;">Tap a point to see the date</div>
+    </div>`;
+}
+
+function showWellnessPoint(dateLabel, val) {
+  const el = document.getElementById('wellnessTooltip');
+  if (el) el.innerHTML = `<span style="color:var(--text);font-weight:600">${dateLabel}</span> · <span style="color:var(--accent2)">${val}%</span>`;
+}
+
+// ─────────────────────────────────────────────
 //  INSIGHTS
 // ─────────────────────────────────────────────
 function renderInsights() {
@@ -1978,6 +2035,9 @@ function renderInsights() {
     el.innerHTML = `<div class="history-empty"><div class="big">📊</div><div>Log a few days to see your trends here.</div></div>`;
     return;
   }
+
+  const wellnessChart = renderWellnessChart(getData().slice(0, 14).slice().reverse());
+
 
   const avgSleep = (entries.reduce((s, e) => s + (e.sleepHours || e.sleep || 0), 0) / entries.length).toFixed(1);
   const avgUnits = (entries.reduce((s, e) => s + (e.units || 0), 0) / entries.length).toFixed(1);
@@ -2007,18 +2067,30 @@ function renderInsights() {
   });
   const feelingAvgs = Object.keys(totals)
     .filter(i => counts[i] >= 2)
-    .map(i => ({ i, avg: (totals[i] / counts[i]).toFixed(1), label: names[i] || 'F'+(+i+1) }))
+    .map(i => ({ i: +i, avg: (totals[i] / counts[i]).toFixed(1), label: names[i] || 'F'+(+i+1) }))
     .sort((a, b) => b.avg - a.avg);
 
-  const feelingBars = feelingAvgs.map(f => {
-    const pct   = (f.avg / 10) * 100;
-    const color = f.avg >= 7 ? '#4ade80' : f.avg >= 5 ? '#facc15' : '#fb923c';
+  // Colour semantics match History: distress (0–10) low is good, positivity (11–17) high is good
+  const distressBarColor   = a => a <= 4 ? '#4ade80' : a <= 6 ? '#fb923c' : '#f87171';
+  const positivityBarColor = a => a <= 3 ? '#f87171' : a <= 5 ? '#fb923c' : a <= 7 ? '#facc15' : '#4ade80';
+
+  const makeBar = (f, colorFn) => {
+    const pct = (f.avg / 10) * 100;
     return `<div class="bar-row">
       <span class="bar-label" style="width:36px;font-size:10px">${f.label}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${colorFn(f.avg)}"></div></div>
       <span class="bar-val">${f.avg}</span>
     </div>`;
-  }).join('');
+  };
+
+  const subHead = t => `<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin:10px 0 6px;">${t}</div>`;
+
+  const distressAvgs   = feelingAvgs.filter(f => f.i <= 10);
+  const positivityAvgs = feelingAvgs.filter(f => f.i >= 11);
+
+  const feelingBars =
+    (distressAvgs.length   ? subHead('Distress')   + distressAvgs.map(f => makeBar(f, distressBarColor)).join('')     : '') +
+    (positivityAvgs.length ? subHead('Positivity') + positivityAvgs.map(f => makeBar(f, positivityBarColor)).join('') : '');
 
   // Activities — total time per activity across the last 7 days
   const actTotals = ACTIVITY_LABELS.map((label, i) => {
@@ -2045,6 +2117,7 @@ function renderInsights() {
     }).join('');
 
   el.innerHTML = `
+    ${wellnessChart}
     <div class="insight-card">
       <div class="insight-title">🌙 Sleep · avg ${avgSleep}h</div>
       ${sleepBars}
