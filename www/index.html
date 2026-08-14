@@ -404,7 +404,7 @@
     .history-feelings-grid {
       display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 10px;
     }
-    .history-activities { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+    .history-activities { display: flex; flex-direction: column; gap: 4px; }
     .history-stat.tappable { cursor: pointer; }
     .history-detail {
       display: none; margin-top: 8px; background: var(--surface);
@@ -2441,13 +2441,21 @@ function renderHistory() {
       .map((a, i) => ({ ...a, label: ACTIVITY_LABELS[i] }))
       .filter(a => a && (a.duration || (a.desc && a.desc.trim())));
     const activitiesHTML = acts.length ? `
-      <div class="history-activities">
-        ${acts.map(a => `
-          <div class="ha-row">
-            <span class="ha-label">${a.label}</span>
-            <span class="ha-desc">${a.desc ? a.desc : ''}</span>
-            <span class="ha-dur">${a.duration ? fmtDur(a.duration) : '✓'}</span>
-          </div>`).join('')}
+      <div class="history-diet" onclick="this.classList.toggle('open')">
+        <div class="history-diet-head">
+          <span class="history-diet-title">🥊 Activity · ${acts.length} logged</span>
+          <span class="history-diet-hint">▾</span>
+        </div>
+        <div class="hdt-rows">
+          <div class="history-activities">
+            ${acts.map(a => `
+              <div class="ha-row">
+                <span class="ha-label">${a.label}</span>
+                <span class="ha-desc">${a.desc ? a.desc : ''}</span>
+                <span class="ha-dur">${a.duration ? fmtDur(a.duration) : '✓'}</span>
+              </div>`).join('')}
+          </div>
+        </div>
       </div>` : '';
 
     // Work duration — from the Work card
