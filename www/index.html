@@ -349,14 +349,18 @@
       letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;
     }
     .history-stats {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
     }
     .history-stat {
-      background: var(--surface); border-radius: 10px; padding: 8px;
+      background: var(--surface); border-radius: 10px; padding: 8px 4px;
       display: flex; flex-direction: column; align-items: center; gap: 3px;
     }
-    .history-stat .hval { font-size: 16px; font-weight: 700; }
+    .history-stat .hval { font-size: 15px; font-weight: 700; }
     .history-stat .hlbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .history-stat .hsub {
+      font-size: 9px; color: var(--muted); max-width: 100%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     .history-notes-text { font-size: 13px; color: var(--muted); margin-top: 10px; font-style: italic; }
     .history-feelings-grid {
       display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 10px;
@@ -511,21 +515,86 @@
 
 
     /* ACCORDION */
-    /* TODAY GRID (2×3 square cards) */
-    .sq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    /* TODAY GRID (2×4 cards — fills exactly one screen, no scroll) */
+    #page-today.active {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - var(--hdr-h, 84px) - 80px - var(--safe-bot));
+      overflow: hidden;
+      padding: 14px 16px 6px;
+    }
+    .sq-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(4, 1fr);
+      gap: 10px; flex: 1; min-height: 0;
+    }
     .sq-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 18px;
-      aspect-ratio: 1; padding: 16px; cursor: pointer;
+      padding: 12px 13px; cursor: pointer; min-height: 0; overflow: hidden;
       display: flex; flex-direction: column; justify-content: space-between;
       transition: transform 0.1s;
     }
     .sq-card:active { transform: scale(0.97); }
-    .sq-icon { font-size: 32px; }
-    .sq-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .sq-icon { font-size: 26px; line-height: 1; }
+    .sq-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; line-height: 1.2; }
     .sq-sub {
-      font-size: 11px; color: var(--muted); line-height: 1.35;
+      font-size: 10.5px; color: var(--muted); line-height: 1.3;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
+
+    /* WORK & DIET SHEET FIELDS */
+    .field-row {
+      display: grid; grid-template-columns: 92px 1fr; gap: 10px;
+      align-items: start; padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .field-row:last-child { border-bottom: none; }
+    .field-label {
+      font-size: 12px; font-weight: 700; color: var(--text);
+      text-transform: uppercase; letter-spacing: 0.05em; padding-top: 9px;
+    }
+    .field-input {
+      width: 100%; height: 36px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text);
+      font-family: var(--font-sans); font-size: 14px;
+      padding: 0 10px; outline: none; transition: border-color 0.15s;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .field-input::placeholder { color: var(--muted); }
+    .field-area {
+      width: 100%; min-height: 62px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text);
+      font-family: var(--font-sans); font-size: 14px; line-height: 1.45;
+      padding: 9px 10px; outline: none; resize: none;
+      transition: border-color 0.15s;
+    }
+    .field-area:focus { border-color: var(--accent2); }
+    .field-area::placeholder { color: var(--muted); }
+    .field-dial {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 36px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; color: var(--muted);
+      font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+      outline: none; cursor: pointer; padding: 0 28px 0 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      transition: border-color 0.15s;
+    }
+    .field-dial:focus { border-color: var(--accent); }
+    .field-dial.has-value { border-color: var(--accent2); color: var(--accent2); }
+    .mile-pair { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+    .mile-total {
+      font-size: 13px; font-weight: 700; color: var(--accent);
+      font-variant-numeric: tabular-nums; min-width: 46px; text-align: right;
+    }
+    .mile-hint {
+      font-size: 9px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 4px;
+    }
+    .mile-hint span:last-child { min-width: 46px; text-align: right; }
 
     /* FULL-SCREEN DETAIL SHEETS */
     .sheet {
@@ -668,6 +737,20 @@
         <div class="sq-sub" id="acc-notes-sub">Tap to add a note</div>
       </div>
     </div>
+    <div class="sq-card" onclick="openSheet('work')">
+      <span class="sq-icon">💼</span>
+      <div>
+        <div class="sq-title">Work</div>
+        <div class="sq-sub" id="acc-work-sub">Tap to record</div>
+      </div>
+    </div>
+    <div class="sq-card" onclick="openSheet('diet')">
+      <span class="sq-icon">🍽️</span>
+      <div>
+        <div class="sq-title">Diet</div>
+        <div class="sq-sub" id="acc-diet-sub">Tap to record</div>
+      </div>
+    </div>
   </div>
 
 
@@ -712,7 +795,7 @@
   </div>
 
   <div style="text-align:center;margin-top:30px;font-size:12px;color:#4a5068">
-    MFR v2.5 · Data stored locally on this device<br>© 2026 Adrian
+    MFR v2.6 · Data stored locally on this device<br>© 2026 Adrian
   </div>
 </div>
 
@@ -1072,6 +1155,99 @@
   </div>
 </div>
 
+<!-- WORK SHEET -->
+<div class="sheet" id="sheet-work">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('work')">‹ Back</button>
+    <span class="sheet-icon">💼</span>
+    <span class="sheet-title">Work</span>
+  </div>
+  <div class="sheet-body">
+
+    <div class="field-row">
+      <span class="field-label">Employer</span>
+      <input type="text" class="field-input" id="work-employer" placeholder="Who did you work for?" oninput="updateWork()" />
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Colleagues Contacted</span>
+      <input type="text" class="field-input" id="work-colleagues" placeholder="Who did you speak to?" oninput="updateWork()" />
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Hours</span>
+      <select class="field-dial" id="work-hours" onchange="updateWork()"></select>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Morning Mileage</span>
+      <div>
+        <div class="mile-hint"><span>Start</span><span>Finish</span><span>Miles</span></div>
+        <div class="mile-pair">
+          <input type="number" inputmode="decimal" class="field-input" id="work-amStart" placeholder="0" oninput="updateWork()" />
+          <input type="number" inputmode="decimal" class="field-input" id="work-amEnd" placeholder="0" oninput="updateWork()" />
+          <span class="mile-total" id="work-amTotal">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Evening Mileage</span>
+      <div>
+        <div class="mile-hint"><span>Start</span><span>Finish</span><span>Miles</span></div>
+        <div class="mile-pair">
+          <input type="number" inputmode="decimal" class="field-input" id="work-pmStart" placeholder="0" oninput="updateWork()" />
+          <input type="number" inputmode="decimal" class="field-input" id="work-pmEnd" placeholder="0" oninput="updateWork()" />
+          <span class="mile-total" id="work-pmTotal">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Problems Arisen</span>
+      <textarea class="field-area" id="work-problems" placeholder="Anything that went wrong?" oninput="updateWork()"></textarea>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Notes</span>
+      <textarea class="field-area" id="work-notes" placeholder="Anything else worth recording" oninput="updateWork()"></textarea>
+    </div>
+
+  </div>
+</div>
+
+<!-- DIET SHEET -->
+<div class="sheet" id="sheet-diet">
+  <div class="sheet-head">
+    <button class="sheet-back" onclick="closeSheet('diet')">‹ Back</button>
+    <span class="sheet-icon">🍽️</span>
+    <span class="sheet-title">Diet</span>
+  </div>
+  <div class="sheet-body">
+
+    <div class="field-row">
+      <span class="field-label">Breakfast</span>
+      <textarea class="field-area" id="diet-breakfast" placeholder="What did you eat?" oninput="updateDiet()"></textarea>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Lunch</span>
+      <textarea class="field-area" id="diet-lunch" placeholder="What did you eat?" oninput="updateDiet()"></textarea>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Dinner</span>
+      <textarea class="field-area" id="diet-dinner" placeholder="What did you eat?" oninput="updateDiet()"></textarea>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Snacks</span>
+      <textarea class="field-area" id="diet-snacks" placeholder="Anything in between" oninput="updateDiet()"></textarea>
+    </div>
+
+  </div>
+</div>
+
 <script>
 // ─────────────────────────────────────────────
 //  CONSTANTS
@@ -1113,7 +1289,9 @@ let state = {
   activities:    [],  // array of 5: { desc, duration }
   meds:          {},
   feelings:      {},
-  notes:         ''
+  notes:         '',
+  work:          { employer:'', colleagues:'', hours:'', amStart:'', amEnd:'', pmStart:'', pmEnd:'', problems:'', notes:'' },
+  diet:          { breakfast:'', lunch:'', dinner:'', snacks:'' }
 };
 
 // ─────────────────────────────────────────────
@@ -1130,7 +1308,13 @@ function getFeelingLabel(i) {
   return names[i] || FEELING_DEFAULTS[i] || ('Feeling ' + (i + 1));
 }
 
-function toDateStr(d) { return d.toISOString().split('T')[0]; }
+// Local date key — NOT toISOString(), which converts to UTC and would file
+// entries logged between midnight and 1am (during BST) under the previous day.
+function toDateStr(d) {
+  return d.getFullYear() + '-' +
+         String(d.getMonth() + 1).padStart(2, '0') + '-' +
+         String(d.getDate()).padStart(2, '0');
+}
 
 // ─────────────────────────────────────────────
 //  INIT
@@ -1140,23 +1324,117 @@ function init() {
   document.getElementById('headerDate').textContent =
     now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
 
+  measureHeader();
   updateSleepTimes();
   renderActivityRows();
+  renderWorkHoursDial();
 
   // Load today if already saved
   const today = toDateStr(now);
+  currentDateKey = today;
   const existing = getData().find(e => e.date === today);
   if (existing) loadEntry(existing);
 
   renderMedList();
   updateStreak();
   updateAccordionSubtitles();
+  updateWorkSubtitle();
+  updateDietSubtitle();
   renderFeelingsCard();
 
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   if (isIOS && !isStandalone) document.getElementById('installBanner').style.display = 'flex';
 }
+
+// ─────────────────────────────────────────────
+//  DAY ROLLOVER
+//  iOS keeps PWAs suspended in memory — init() does not re-run when you
+//  reopen the app, so stale in-memory state would otherwise be written
+//  under the new date on the first interaction. Check on every resume.
+// ─────────────────────────────────────────────
+let currentDateKey = null;
+
+function resetForNewDay() {
+  clearTimeout(autoSaveTimer);
+
+  state = {
+    sleepBedtime:  '23:00',
+    sleepWakeTime: '07:00',
+    sleepHours:    8.0,
+    sleepQuality:  null,
+    units:         0,
+    drinks:        Array(DRINK_COUNT).fill(null).map(() => ({ abv:'', qty:'', name:'' })),
+    activities:    Array(ACTIVITY_COUNT).fill(null).map(() => ({ desc:'', duration:'' })),
+    meds:          {},
+    feelings:      {},
+    notes:         '',
+    work:          { employer:'', colleagues:'', hours:'', amStart:'', amEnd:'', pmStart:'', pmEnd:'', problems:'', notes:'' },
+    diet:          { breakfast:'', lunch:'', dinner:'', snacks:'' }
+  };
+
+  // Clear the form fields
+  const notesEl = document.getElementById('notesArea');
+  if (notesEl) notesEl.value = '';
+  const qSel = document.getElementById('sleepQualitySelect');
+  if (qSel) { qSel.value = ''; qSel.classList.remove('has-value'); }
+  for (let i = 0; i < DRINK_COUNT; i++) {
+    ['abv-', 'qty-', 'name-'].forEach(p => {
+      const el = document.getElementById(p + i);
+      if (el) { el.value = ''; el.classList.remove('has-value'); }
+    });
+    const u = document.getElementById('units-' + i);
+    if (u) { u.textContent = '—'; u.classList.remove('has-units'); }
+  }
+  const totalEl = document.getElementById('alcoholTotalDisplay');
+  if (totalEl) { totalEl.textContent = '0.0'; totalEl.classList.add('zero'); }
+
+  const bedEl  = document.getElementById('sleepBedtime');
+  const wakeEl = document.getElementById('sleepWakeTime');
+  if (bedEl)  bedEl.value  = '23:00';
+  if (wakeEl) wakeEl.value = '07:00';
+
+  renderActivityRows();
+  renderWorkHoursDial();
+  loadWorkState();
+  loadDietState();
+
+  // If an entry already exists for the new day, load it
+  const existing = getData().find(e => e.date === currentDateKey);
+  if (existing) loadEntry(existing);
+
+  const now = new Date();
+  document.getElementById('headerDate').textContent =
+    now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+  updateSleepTimes();
+  renderMedList();
+  updateStreak();
+  updateAccordionSubtitles();
+  updateActivitiesSubtitle();
+  updateWorkSubtitle();
+  updateDietSubtitle();
+  renderFeelingsCard();
+  renderHistory();
+  renderInsights();
+
+  // updateSleepTimes/updateActivitiesSubtitle queue an autosave — cancel it so
+  // a blank entry isn't created for the new day before you've logged anything.
+  clearTimeout(autoSaveTimer);
+}
+
+function checkDayRollover() {
+  const today = toDateStr(new Date());
+  if (currentDateKey && today !== currentDateKey) {
+    currentDateKey = today;
+    resetForNewDay();
+  }
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDayRollover(); });
+window.addEventListener('pageshow', checkDayRollover);
+window.addEventListener('focus', checkDayRollover);
+setInterval(checkDayRollover, 60000);
 
 // ─────────────────────────────────────────────
 //  ACCORDION
@@ -1166,6 +1444,8 @@ function openSheet(id) {
   if (!el) return;
   if (id === 'feelings') renderFeelingsCard();
   if (id === 'meds')     { renderMedList(); updateAccordionSubtitles(); }
+  if (id === 'work')     { if (!document.getElementById('work-hours').options.length) renderWorkHoursDial(); loadWorkState(); }
+  if (id === 'diet')     loadDietState();
   el.classList.add('open');
   el.scrollTop = 0;
 }
@@ -1174,6 +1454,8 @@ function closeSheet(id) {
   if (el) el.classList.remove('open');
   updateAccordionSubtitles();
   updateActivitiesSubtitle();
+  updateWorkSubtitle();
+  updateDietSubtitle();
 }
 
 function toggleAccordion(id) {
@@ -1216,6 +1498,144 @@ function updateAccordionSubtitles() {
   if (subNotes) subNotes.textContent = notesVal ? notesVal.substring(0, 40) + (notesVal.length > 40 ? '…' : '') : 'Tap to add a note';
 }
 
+// ─────────────────────────────────────────────
+//  ONE-SCREEN GRID SIZING
+// ─────────────────────────────────────────────
+function measureHeader() {
+  const h = document.querySelector('.header');
+  if (h) document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px');
+}
+window.addEventListener('resize', measureHeader);
+window.addEventListener('orientationchange', () => setTimeout(measureHeader, 250));
+
+// ─────────────────────────────────────────────
+//  WORK
+// ─────────────────────────────────────────────
+const WORK_HOUR_OPTS = [
+  ['30','30 min'],['60','1 hr'],['90','1.5 hrs'],['120','2 hrs'],['150','2.5 hrs'],
+  ['180','3 hrs'],['210','3.5 hrs'],['240','4 hrs'],['270','4.5 hrs'],['300','5 hrs'],
+  ['330','5.5 hrs'],['360','6 hrs'],['390','6.5 hrs'],['420','7 hrs'],['450','7.5 hrs'],
+  ['480','8 hrs'],['510','8.5 hrs'],['540','9 hrs'],['570','9.5 hrs'],['600','10 hrs'],
+  ['630','10.5 hrs'],['660','11 hrs'],['690','11.5 hrs'],['720','12 hrs'],
+  ['780','13 hrs'],['840','14 hrs']
+];
+
+function renderWorkHoursDial() {
+  const sel = document.getElementById('work-hours');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select duration</option>' +
+    WORK_HOUR_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+}
+
+function milesBetween(a, b) {
+  const s = parseFloat(a), f = parseFloat(b);
+  if (isNaN(s) || isNaN(f)) return null;
+  const d = f - s;
+  return d >= 0 ? d : null;
+}
+
+function updateWork() {
+  const g = id => document.getElementById(id)?.value ?? '';
+  state.work = {
+    employer:   g('work-employer'),
+    colleagues: g('work-colleagues'),
+    hours:      g('work-hours'),
+    amStart:    g('work-amStart'),
+    amEnd:      g('work-amEnd'),
+    pmStart:    g('work-pmStart'),
+    pmEnd:      g('work-pmEnd'),
+    problems:   g('work-problems'),
+    notes:      g('work-notes')
+  };
+  const am = milesBetween(state.work.amStart, state.work.amEnd);
+  const pm = milesBetween(state.work.pmStart, state.work.pmEnd);
+  const amEl = document.getElementById('work-amTotal');
+  const pmEl = document.getElementById('work-pmTotal');
+  if (amEl) amEl.textContent = am === null ? '—' : am.toFixed(1);
+  if (pmEl) pmEl.textContent = pm === null ? '—' : pm.toFixed(1);
+  const dial = document.getElementById('work-hours');
+  if (dial) dial.classList.toggle('has-value', !!dial.value);
+  updateWorkSubtitle();
+  autoSave();
+}
+
+function workTotalMiles() {
+  const am = milesBetween(state.work?.amStart, state.work?.amEnd) || 0;
+  const pm = milesBetween(state.work?.pmStart, state.work?.pmEnd) || 0;
+  return am + pm;
+}
+
+function updateWorkSubtitle() {
+  const sub = document.getElementById('acc-work-sub');
+  if (!sub) return;
+  const w = state.work || {};
+  const bits = [];
+  if (w.hours)     bits.push(fmtDur(w.hours));
+  const miles = workTotalMiles();
+  if (miles > 0)   bits.push(miles.toFixed(1) + ' mi');
+  if (w.employer)  bits.unshift(w.employer);
+  sub.textContent = bits.length ? bits.join(' · ') : 'Tap to record';
+}
+
+function loadWorkState() {
+  const w = state.work || {};
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  set('work-employer',   w.employer);
+  set('work-colleagues', w.colleagues);
+  set('work-hours',      w.hours);
+  set('work-amStart',    w.amStart);
+  set('work-amEnd',      w.amEnd);
+  set('work-pmStart',    w.pmStart);
+  set('work-pmEnd',      w.pmEnd);
+  set('work-problems',   w.problems);
+  set('work-notes',      w.notes);
+  const am = milesBetween(w.amStart, w.amEnd);
+  const pm = milesBetween(w.pmStart, w.pmEnd);
+  const amEl = document.getElementById('work-amTotal');
+  const pmEl = document.getElementById('work-pmTotal');
+  if (amEl) amEl.textContent = am === null ? '—' : am.toFixed(1);
+  if (pmEl) pmEl.textContent = pm === null ? '—' : pm.toFixed(1);
+  const dial = document.getElementById('work-hours');
+  if (dial) dial.classList.toggle('has-value', !!dial.value);
+  updateWorkSubtitle();
+}
+
+// ─────────────────────────────────────────────
+//  DIET
+// ─────────────────────────────────────────────
+function updateDiet() {
+  const g = id => document.getElementById(id)?.value ?? '';
+  state.diet = {
+    breakfast: g('diet-breakfast'),
+    lunch:     g('diet-lunch'),
+    dinner:    g('diet-dinner'),
+    snacks:    g('diet-snacks')
+  };
+  updateDietSubtitle();
+  autoSave();
+}
+
+function updateDietSubtitle() {
+  const sub = document.getElementById('acc-diet-sub');
+  if (!sub) return;
+  const d = state.diet || {};
+  const filled = [
+    ['Breakfast', d.breakfast], ['Lunch', d.lunch],
+    ['Dinner', d.dinner], ['Snacks', d.snacks]
+  ].filter(([, v]) => v && v.trim()).map(([k]) => k);
+  sub.textContent = filled.length ? filled.join(' · ') : 'Tap to record';
+}
+
+function loadDietState() {
+  const d = state.diet || {};
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  set('diet-breakfast', d.breakfast);
+  set('diet-lunch',     d.lunch);
+  set('diet-dinner',    d.dinner);
+  set('diet-snacks',    d.snacks);
+  updateDietSubtitle();
+}
+
 function loadEntry(e) {
   state.sleepBedtime  = e.sleepBedtime  || '23:00';
   state.sleepWakeTime = e.sleepWakeTime || '07:00';
@@ -1226,6 +1646,8 @@ function loadEntry(e) {
   state.activities    = e.activities    || Array(ACTIVITY_COUNT).fill(null).map(() => ({ desc: '', duration: '' }));
   state.meds          = e.meds          || {};
   state.feelings      = e.feelings      || {};
+  state.work          = Object.assign({ employer:'', colleagues:'', hours:'', amStart:'', amEnd:'', pmStart:'', pmEnd:'', problems:'', notes:'' }, e.work || {});
+  state.diet          = Object.assign({ breakfast:'', lunch:'', dinner:'', snacks:'' }, e.diet || {});
 
   document.getElementById('sleepBedtime').value  = state.sleepBedtime;
   document.getElementById('sleepWakeTime').value = state.sleepWakeTime;
@@ -1235,6 +1657,9 @@ function loadEntry(e) {
   loadDrinkState();
   renderActivityRows();
   loadActivitiesState();
+  renderWorkHoursDial();
+  loadWorkState();
+  loadDietState();
 }
 
 // ─────────────────────────────────────────────
@@ -1841,7 +2266,9 @@ function saveEntry() {
     drinks:       state.drinks || [],
     activities:   state.activities || [],
     meds:         { ...state.meds },
-    notes:        document.getElementById('notesArea').value.trim()
+    notes:        document.getElementById('notesArea').value.trim(),
+    work:         { ...(state.work || {}) },
+    diet:         { ...(state.diet || {}) }
   };
   if (idx >= 0) entries[idx] = entry;
   else entries.unshift(entry);
@@ -1942,8 +2369,11 @@ function renderHistory() {
           </div>`).join('')}
       </div>` : '';
 
-    const sleepHrs = e.sleepHours || e.sleep || 0;
-    const sleepColor = sleepHrs >= 7 ? 'var(--good)' : sleepHrs >= 5 ? 'var(--warn)' : 'var(--bad)';
+    // Work duration — from the Work card
+    const workMins     = parseInt(e.work?.hours) || 0;
+    const workEmployer = (e.work?.employer || '').trim();
+
+    const sleepHrs = e.sleepHours || e.sleep || 0;    const sleepColor = sleepHrs >= 7 ? 'var(--good)' : sleepHrs >= 5 ? 'var(--warn)' : 'var(--bad)';
     const bedLabel  = e.sleepBedtime  ? e.sleepBedtime  : '—';
     const wakeLabel = e.sleepWakeTime ? e.sleepWakeTime : '—';
     return `
@@ -1962,6 +2392,11 @@ function renderHistory() {
           <div class="history-stat">
             <span class="hval" style="color:var(--good)">${totalMeds > 0 ? takenCount+'/'+totalMeds : '—'}</span>
             <span class="hlbl">Meds</span>
+          </div>
+          <div class="history-stat">
+            <span class="hval" style="color:${workMins ? 'var(--accent2)' : 'var(--muted)'}">${workMins ? fmtDur(workMins) : '—'}</span>
+            <span class="hlbl">Work</span>
+            ${workEmployer ? `<span class="hsub">${workEmployer}</span>` : ''}
           </div>
         </div>
         <div class="history-detail" id="hd-sleep-${idx}">${sleepDetail}</div>
@@ -2041,6 +2476,20 @@ function renderInsights() {
 
   const avgSleep = (entries.reduce((s, e) => s + (e.sleepHours || e.sleep || 0), 0) / entries.length).toFixed(1);
   const avgUnits = (entries.reduce((s, e) => s + (e.units || 0), 0) / entries.length).toFixed(1);
+
+  // Alcohol — how many of the last 7 calendar days had a drink
+  const last7Keys = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(Date.now() - i * 86400000);
+    last7Keys.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
+  }
+  const all         = getData();
+  const week        = last7Keys.map(k => all.find(e => e.date === k)).filter(Boolean);
+  const drinkDays   = week.filter(e => (e.units || 0) > 0).length;
+  const loggedDays  = week.length;
+  const dryDays     = loggedDays - drinkDays;
+  const drinkColor  = drinkDays === 0 ? 'var(--good)' : drinkDays <= 2 ? 'var(--good)' : drinkDays <= 4 ? 'var(--warn)' : 'var(--bad)';
+  const weekUnits   = week.reduce((s, e) => s + (e.units || 0), 0).toFixed(1);
 
   // Sleep bars
   const sleepBars = entries.slice().reverse().map(e => {
@@ -2133,14 +2582,19 @@ function renderInsights() {
       ${feelingBars}
     </div>` : ''}
     <div class="insight-card">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="insight-title">🍺 Alcohol · last 7 days</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px">
         <div style="text-align:center">
-          <div style="font-size:36px;font-weight:700;color:var(--warn)">${avgUnits}</div>
-          <div style="font-size:12px;color:var(--muted)">avg units/day</div>
+          <div style="font-size:32px;font-weight:700;color:${drinkColor};font-variant-numeric:tabular-nums">${drinkDays}<span style="font-size:18px;font-weight:700">/7</span></div>
+          <div style="font-size:11px;color:var(--muted)">days with a drink</div>
         </div>
         <div style="text-align:center">
-          <div style="font-size:36px;font-weight:700;color:var(--accent)">${entries.length}</div>
-          <div style="font-size:12px;color:var(--muted)">days logged</div>
+          <div style="font-size:32px;font-weight:700;color:var(--warn);font-variant-numeric:tabular-nums">${avgUnits}</div>
+          <div style="font-size:11px;color:var(--muted)">avg units/day</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:32px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums">${weekUnits}</div>
+          <div style="font-size:11px;color:var(--muted)">units this week</div>
         </div>
       </div>
     </div>`;
