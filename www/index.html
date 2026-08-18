@@ -2466,17 +2466,19 @@ function renderHistory() {
 
     const workAmMiles = milesBetween(w.amStart, w.amEnd);
     const workPmMiles = milesBetween(w.pmStart, w.pmEnd);
-    const workRow = (label, val) => val ? `<div class="hd-row">
+    const workRow = (label, val, meta) => val ? `<div class="hd-row">
         <span class="hd-name">${label}</span>
-        <span class="hd-meta"></span>
+        <span class="hd-meta">${meta || ''}</span>
         <span class="hd-val">${val}</span>
       </div>` : '';
+    const amMeta = (w.amStart || w.amEnd) ? `${w.amStart || '—'} → ${w.amEnd || '—'}` : '';
+    const pmMeta = (w.pmStart || w.pmEnd) ? `${w.pmStart || '—'} → ${w.pmEnd || '—'}` : '';
     const workDetail = workHasData ? [
       workRow('👔 Employer', workEmployer),
       workRow('🗣️ Colleagues contacted', w.colleagues),
       workRow('⏱️ Hours', workMins ? fmtDur(workMins) : ''),
-      workRow('🌅 Morning mileage', workAmMiles !== null ? workAmMiles.toFixed(1) + ' mi' : ''),
-      workRow('🌇 Evening mileage', workPmMiles !== null ? workPmMiles.toFixed(1) + ' mi' : ''),
+      workRow('🌅 Morning mileage', workAmMiles !== null ? workAmMiles.toFixed(1) + ' mi' : (amMeta ? '—' : ''), amMeta),
+      workRow('🌇 Evening mileage', workPmMiles !== null ? workPmMiles.toFixed(1) + ' mi' : (pmMeta ? '—' : ''), pmMeta),
       workRow('⚠️ Problems arisen', w.problems),
       workRow('📝 Notes', w.notes)
     ].filter(Boolean).join('') : `<div class="hd-row"><span class="hd-name" style="color:var(--muted)">No work recorded</span></div>`;
